@@ -30,17 +30,17 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2" data-testid="text-welcome">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 break-words" data-testid="text-welcome">
                 Welcome back, {user?.firstName || user?.email || 'Voter'}!
               </h1>
               <p className="text-muted-foreground">
                 Participate in ongoing polls or create your own to engage your community.
               </p>
             </div>
-            <Link href="/create">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-create-poll">
+            <Link href="/create" className="flex-shrink-0">
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto" data-testid="button-create-poll">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Poll
               </Button>

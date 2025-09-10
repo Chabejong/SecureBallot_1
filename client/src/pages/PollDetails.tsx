@@ -100,9 +100,9 @@ export default function PollDetails() {
         {/* Poll Header */}
         <Card className="mb-8">
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
+            <div className="">
+              <div className="">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
                   <Badge variant="outline" className={pollTypeInfo.color}>
                     <pollTypeInfo.icon className="w-3 h-3 mr-1" />
                     {pollTypeInfo.label}
@@ -124,7 +124,7 @@ export default function PollDetails() {
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-2xl lg:text-3xl mb-3" data-testid="text-poll-title">
+                <CardTitle className="text-xl sm:text-2xl lg:text-3xl mb-3 break-words hyphens-auto" data-testid="text-poll-title">
                   {poll.title}
                 </CardTitle>
                 {poll.description && (
@@ -132,10 +132,10 @@ export default function PollDetails() {
                     {poll.description}
                   </p>
                 )}
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    Created by {poll.creator?.firstName || poll.creator?.email || 'Anonymous'}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1 min-w-0">
+                    <User className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Created by {poll.creator?.firstName || poll.creator?.email || 'Anonymous'}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
@@ -152,7 +152,7 @@ export default function PollDetails() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8">
           {isActive && !hasVoted?.hasVoted && (
             <Link href={`/poll/${poll.id}/vote`}>
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-vote-now">
