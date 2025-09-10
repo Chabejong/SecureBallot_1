@@ -24,15 +24,7 @@ export default function Landing() {
               <p className="text-xl mb-8 text-white/90 leading-relaxed">
                 Empower your community with transparent, secure, and accessible voting. From local decisions to nationwide polls, The Ballot Box ensures every voice is heard.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  size="lg" 
-                  className="bg-secondary text-white hover:bg-secondary/90"
-                  onClick={() => window.location.href = "/api/login"}
-                  data-testid="button-start-voting"
-                >
-                  Start Voting Now
-                </Button>
+              <div className="flex justify-center">
                 <Button 
                   size="lg" 
                   variant="outline" 
@@ -46,8 +38,8 @@ export default function Landing() {
             </div>
             <div className="hidden lg:block">
               <img 
-                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
-                alt="Community gathering for democratic voting" 
+                src="/attached_assets/ballot_box_1757517225523.png" 
+                alt="Ballot box with hand voting" 
                 className="rounded-2xl shadow-2xl w-full h-auto border-2 border-primary/20" 
               />
             </div>
