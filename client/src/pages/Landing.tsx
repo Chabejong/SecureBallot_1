@@ -38,7 +38,7 @@ export default function Landing() {
             </div>
             <div className="hidden lg:block">
               <img 
-                src="/attached_assets/ballot_box_1757517649265.png" 
+                src="/ballot-box.png" 
                 alt="Democratic voting ballot box for secure community elections" 
                 className="rounded-2xl shadow-2xl w-full h-auto border-2 border-primary/20" 
               />
