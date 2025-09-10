@@ -1,0 +1,197 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
+import { insertPollSchema, insertVoteSchema } from "@shared/schema";
+import { z } from "zod";
+
+const createPollWithOptionsSchema = insertPollSchema.extend({
+  options: z.array(z.string().min(1, "Option cannot be empty")).min(2, "At least 2 options required"),
+});
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Poll routes
+  app.get('/api/polls', async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const polls = await storage.getPolls(limit);
+      res.json(polls);
+    } catch (error) {
+      console.error("Error fetching polls:", error);
+      res.status(500).json({ message: "Failed to fetch polls" });
+    }
+  });
+
+  app.get('/api/polls/:id', async (req, res) => {
+    try {
+      const poll = await storage.getPoll(req.params.id);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      res.json(poll);
+    } catch (error) {
+      console.error("Error fetching poll:", error);
+      res.status(500).json({ message: "Failed to fetch poll" });
+    }
+  });
+
+  app.get('/api/polls/:id/results', async (req, res) => {
+    try {
+      const results = await storage.getPollResults(req.params.id);
+      if (!results) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching poll results:", error);
+      res.status(500).json({ message: "Failed to fetch poll results" });
+    }
+  });
+
+  app.post('/api/polls', isAuthenticated, async (req: any, res) => {
+    try {
+      const validatedData = createPollWithOptionsSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      
+      const { options, ...pollData } = validatedData;
+      const poll = await storage.createPoll(
+        { ...pollData, createdById: userId },
+        options
+      );
+      
+      res.status(201).json(poll);
+    } catch (error: any) {
+      console.error("Error creating poll:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid poll data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create poll" });
+    }
+  });
+
+  app.get('/api/user/polls', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const polls = await storage.getUserPolls(userId);
+      res.json(polls);
+    } catch (error) {
+      console.error("Error fetching user polls:", error);
+      res.status(500).json({ message: "Failed to fetch user polls" });
+    }
+  });
+
+  app.delete('/api/polls/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const poll = await storage.getPoll(req.params.id);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      if (poll.createdById !== userId) {
+        return res.status(403).json({ message: "Not authorized to delete this poll" });
+      }
+      
+      const deleted = await storage.deletePoll(req.params.id);
+      if (deleted) {
+        res.json({ message: "Poll deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete poll" });
+      }
+    } catch (error) {
+      console.error("Error deleting poll:", error);
+      res.status(500).json({ message: "Failed to delete poll" });
+    }
+  });
+
+  // Voting routes
+  app.post('/api/polls/:id/vote', async (req: any, res) => {
+    try {
+      const pollId = req.params.id;
+      const { optionId } = req.body;
+      
+      if (!optionId) {
+        return res.status(400).json({ message: "Option ID is required" });
+      }
+
+      // Check if poll exists and is active
+      const poll = await storage.getPoll(pollId);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      if (!poll.isActive) {
+        return res.status(400).json({ message: "Poll is not active" });
+      }
+      
+      if (new Date() > poll.endDate) {
+        return res.status(400).json({ message: "Poll has ended" });
+      }
+
+      // Check if option belongs to this poll
+      const options = await storage.getPollOptions(pollId);
+      const validOption = options.find(opt => opt.id === optionId);
+      if (!validOption) {
+        return res.status(400).json({ message: "Invalid option" });
+      }
+
+      const userId = req.isAuthenticated() ? req.user?.claims?.sub : undefined;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+
+      // Check if user/IP already voted
+      const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
+      if (hasVoted) {
+        return res.status(400).json({ message: "You have already voted in this poll" });
+      }
+
+      const voteData = {
+        pollId,
+        optionId,
+        voterId: userId,
+        ipAddress: poll.isAnonymous ? ipAddress : undefined,
+      };
+
+      const vote = await storage.submitVote(voteData);
+      res.status(201).json({ message: "Vote submitted successfully", voteId: vote.id });
+    } catch (error: any) {
+      console.error("Error submitting vote:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid vote data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to submit vote" });
+    }
+  });
+
+  app.get('/api/polls/:id/has-voted', async (req: any, res) => {
+    try {
+      const pollId = req.params.id;
+      const userId = req.isAuthenticated() ? req.user?.claims?.sub : undefined;
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      
+      const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
+      res.json({ hasVoted });
+    } catch (error) {
+      console.error("Error checking vote status:", error);
+      res.status(500).json({ message: "Failed to check vote status" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
