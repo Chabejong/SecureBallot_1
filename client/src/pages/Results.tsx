@@ -15,7 +15,7 @@ export default function Results() {
 
   const { data: pollResults, isLoading } = useQuery({
     queryKey: ["/api/polls", id, "results"],
-    select: (data): PollWithResults => data,
+    select: (data): PollWithResults => data as PollWithResults,
   });
 
   if (isLoading) {
@@ -189,7 +189,7 @@ export default function Results() {
                 <div className="flex justify-between">
                   <span>Poll Duration:</span>
                   <span data-testid="text-poll-duration">
-                    {formatDistanceToNow(new Date(pollResults.createdAt), { addSuffix: false })}
+                    {pollResults.createdAt ? formatDistanceToNow(new Date(pollResults.createdAt), { addSuffix: false }) : 'Unknown'}
                   </span>
                 </div>
                 <div className="flex justify-between">

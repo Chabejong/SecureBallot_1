@@ -174,7 +174,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePoll(id: string): Promise<boolean> {
     const result = await db.delete(polls).where(eq(polls.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Voting operations

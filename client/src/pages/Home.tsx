@@ -15,12 +15,12 @@ export default function Home() {
   
   const { data: polls, isLoading: pollsLoading } = useQuery({
     queryKey: ["/api/polls"],
-    select: (data): PollWithDetails[] => data,
+    select: (data): PollWithDetails[] => data as PollWithDetails[],
   });
 
   const { data: userPolls, isLoading: userPollsLoading } = useQuery({
     queryKey: ["/api/user/polls"],
-    select: (data): PollWithDetails[] => data,
+    select: (data): PollWithDetails[] => data as PollWithDetails[],
   });
 
   return (
