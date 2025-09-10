@@ -41,7 +41,7 @@ export function VotingInterface({
           <p className="text-muted-foreground mb-4">
             {poll.description || "Choose your preferred option. Your vote is anonymous and encrypted."}
           </p>
-          <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-1" data-testid="text-voting-time-remaining">
               <Clock className="w-4 h-4" />
               {timeRemaining}
