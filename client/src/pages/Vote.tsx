@@ -35,9 +35,12 @@ export default function Vote() {
       return await apiRequest("POST", `/api/polls/${id}/vote`, { optionId });
     },
     onSuccess: () => {
+      const isVoteChange = hasVoted?.hasVoted;
       toast({
-        title: "Vote Submitted",
-        description: "Your vote has been recorded successfully!",
+        title: isVoteChange ? "Vote Updated" : "Vote Submitted",
+        description: isVoteChange 
+          ? "Your vote has been updated successfully!" 
+          : "Your vote has been recorded successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/polls", id, "has-voted"] });
       queryClient.invalidateQueries({ queryKey: ["/api/polls", id, "results"] });
@@ -136,7 +139,7 @@ export default function Vote() {
     );
   }
 
-  if (hasVoted?.hasVoted) {
+  if (hasVoted?.hasVoted && !poll.allowVoteChanges) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -185,6 +188,7 @@ export default function Vote() {
           onOptionSelect={setSelectedOptionId}
           onVote={handleVote}
           isSubmitting={voteMutation.isPending}
+          hasVoted={hasVoted?.hasVoted}
         />
 
         {/* Security Notice */}

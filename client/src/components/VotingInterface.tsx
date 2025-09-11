@@ -11,6 +11,7 @@ interface VotingInterfaceProps {
   onOptionSelect: (optionId: string) => void;
   onVote: () => void;
   isSubmitting: boolean;
+  hasVoted?: boolean;
 }
 
 export function VotingInterface({ 
@@ -18,7 +19,8 @@ export function VotingInterface({
   selectedOptionId, 
   onOptionSelect, 
   onVote, 
-  isSubmitting 
+  isSubmitting,
+  hasVoted = false
 }: VotingInterfaceProps) {
   const timeRemaining = formatDistanceToNow(new Date(poll.endDate), { addSuffix: true });
 
@@ -41,6 +43,13 @@ export function VotingInterface({
           <p className="text-muted-foreground mb-4">
             {poll.description || "Choose your preferred option. Your vote is anonymous and encrypted."}
           </p>
+          {hasVoted && poll.allowVoteChanges && (
+            <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-secondary font-medium">
+                You have already voted in this poll. You can change your vote if needed.
+              </p>
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-1" data-testid="text-voting-time-remaining">
               <Clock className="w-4 h-4" />
@@ -104,7 +113,9 @@ export function VotingInterface({
             data-testid="button-submit-vote"
           >
             <Vote className="w-4 h-4 mr-2" />
-            {isSubmitting ? "Submitting Vote..." : "Submit My Vote"}
+            {isSubmitting 
+              ? (hasVoted ? "Updating Vote..." : "Submitting Vote...") 
+              : (hasVoted ? "Change My Vote" : "Submit My Vote")}
           </Button>
         </div>
       </CardContent>
