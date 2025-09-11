@@ -170,7 +170,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user/IP already voted
       const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
       if (hasVoted) {
-        return res.status(400).json({ message: "You have already voted in this poll" });
+        // Check if poll allows vote changes
+        if (!poll.allowVoteChanges) {
+          return res.status(400).json({ message: "You have already voted in this poll" });
+        }
+        
+        // If vote changes are allowed, update the existing vote
+        const updateVoteData = {
+          pollId,
+          optionId,
+          voterId: userId,
+          ipAddress: poll.isAnonymous ? ipAddress : undefined,
+        };
+        
+        const updatedVote = await storage.updateVote(pollId, userId, ipAddress, updateVoteData);
+        return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
       }
 
       const voteData = {

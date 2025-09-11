@@ -33,6 +33,7 @@ export interface IStorage {
   
   // Voting operations
   submitVote(vote: InsertVote): Promise<Vote>;
+  updateVote(pollId: string, userId?: string, ipAddress?: string, vote: InsertVote): Promise<Vote>;
   hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean>;
   getPollResults(pollId: string): Promise<PollWithResults | undefined>;
   
@@ -181,6 +182,30 @@ export class DatabaseStorage implements IStorage {
   async submitVote(voteData: InsertVote): Promise<Vote> {
     const [vote] = await db.insert(votes).values(voteData).returning();
     return vote;
+  }
+
+  async updateVote(pollId: string, userId?: string, ipAddress?: string, voteData: InsertVote): Promise<Vote> {
+    let whereCondition;
+    
+    if (userId) {
+      whereCondition = and(eq(votes.pollId, pollId), eq(votes.voterId, userId));
+    } else if (ipAddress) {
+      whereCondition = and(eq(votes.pollId, pollId), eq(votes.ipAddress, ipAddress));
+    } else {
+      throw new Error("Either userId or ipAddress must be provided");
+    }
+
+    const [updatedVote] = await db
+      .update(votes)
+      .set({ optionId: voteData.optionId })
+      .where(whereCondition)
+      .returning();
+    
+    if (!updatedVote) {
+      throw new Error("Vote not found to update");
+    }
+    
+    return updatedVote;
   }
 
   async hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean> {
