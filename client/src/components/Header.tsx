@@ -57,14 +57,14 @@ export function Header() {
           {isAuthenticated && (
             <nav className="hidden md:flex items-center space-x-8">
               <Link href="/">
-                <a className="text-foreground hover:text-primary font-medium transition-colors" data-testid="link-polls">
+                <span className="text-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-polls">
                   Polls
-                </a>
+                </span>
               </Link>
               <Link href="/create">
-                <a className="text-muted-foreground hover:text-primary font-medium transition-colors" data-testid="link-create">
+                <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-create">
                   Create
-                </a>
+                </span>
               </Link>
             </nav>
           )}
