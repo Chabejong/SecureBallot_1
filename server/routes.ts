@@ -7,6 +7,9 @@ import { z } from "zod";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.string().min(1, "Option cannot be empty")).min(2, "At least 2 options required"),
+  endDate: z.string().transform((dateString) => new Date(dateString)),
+}).omit({
+  createdById: true, // We'll add this in the route
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -65,8 +68,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/polls', isAuthenticated, async (req: any, res) => {
     try {
+      console.log('User object:', req.user);
+      console.log('Request body:', req.body);
+      
       const validatedData = createPollWithOptionsSchema.parse(req.body);
-      const userId = req.user.claims.sub;
+      
+      // Get user ID from authenticated user
+      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      
+      if (!userId) {
+        console.error('No user ID found in request:', req.user);
+        return res.status(401).json({ message: "User authentication invalid" });
+      }
       
       const { options, ...pollData } = validatedData;
       const poll = await storage.createPoll(
