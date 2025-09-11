@@ -157,6 +157,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Poll has ended" });
       }
 
+      // For non-anonymous polls, require authentication
+      if (!poll.isAnonymous && !req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required for non-anonymous polls" });
+      }
+
       // Check if option belongs to this poll
       const options = await storage.getPollOptions(pollId);
       const validOption = options.find(opt => opt.id === optionId);
@@ -164,11 +169,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid option" });
       }
 
-      const userId = req.isAuthenticated() ? req.user?.claims?.sub : undefined;
+      // Robust user ID extraction (consistent with create poll route)
+      const userId = req.isAuthenticated() ? (req.user?.claims?.sub || req.user?.sub || req.user?.id) : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
 
+      // For non-anonymous polls, ensure we have a valid userId
+      if (!poll.isAnonymous && !userId) {
+        return res.status(401).json({ message: "Valid user authentication required for non-anonymous polls" });
+      }
+
+      // For non-anonymous polls, use userId only; for anonymous polls, use IP only
+      const identifierUserId = poll.isAnonymous ? undefined : userId;
+      const identifierIP = poll.isAnonymous ? ipAddress : undefined;
+
       // Check if user/IP already voted
-      const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
+      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP);
       if (hasVoted) {
         // Check if poll allows vote changes
         if (!poll.allowVoteChanges) {
@@ -179,19 +194,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updateVoteData = {
           pollId,
           optionId,
-          voterId: userId,
-          ipAddress: poll.isAnonymous ? ipAddress : undefined,
+          voterId: identifierUserId,
+          ipAddress: identifierIP,
         };
         
-        const updatedVote = await storage.updateVote(pollId, userId, ipAddress, updateVoteData);
+        const updatedVote = await storage.updateVote(pollId, identifierUserId, identifierIP, updateVoteData);
         return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
       }
 
       const voteData = {
         pollId,
         optionId,
-        voterId: userId,
-        ipAddress: poll.isAnonymous ? ipAddress : undefined,
+        voterId: identifierUserId,
+        ipAddress: identifierIP,
       };
 
       const vote = await storage.submitVote(voteData);
