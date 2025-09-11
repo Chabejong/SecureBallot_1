@@ -45,6 +45,7 @@ export const polls = pgTable("polls", {
   pollType: varchar("poll_type", { length: 20 }).notNull().default("public"), // public, members, invited
   isAnonymous: boolean("is_anonymous").notNull().default(true),
   allowComments: boolean("allow_comments").notNull().default(false),
+  allowVoteChanges: boolean("allow_vote_changes").notNull().default(true),
   isActive: boolean("is_active").notNull().default(true),
   endDate: timestamp("end_date").notNull(),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
