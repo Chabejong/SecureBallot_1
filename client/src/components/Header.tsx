@@ -134,7 +134,7 @@ export function Header() {
               </div>
             ) : (
               <Button 
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className=""
                 onClick={() => window.location.href = "/api/login"}
                 data-testid="button-sign-in"
               >
@@ -220,7 +220,7 @@ export function Header() {
                   ) : (
                     <SheetClose asChild>
                       <Button 
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-12"
+                        className="w-full h-12"
                         onClick={() => window.location.href = "/api/login"}
                         data-testid="button-mobile-sign-in"
                       >

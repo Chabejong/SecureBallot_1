@@ -40,7 +40,7 @@ export default function Home() {
               </p>
             </div>
             <Link href="/create" className="flex-shrink-0">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto" data-testid="button-create-poll">
+              <Button size="lg" className="w-full sm:w-auto" data-testid="button-create-poll">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Poll
               </Button>

@@ -155,7 +155,7 @@ export default function PollDetails() {
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8">
           {isActive && !hasVoted?.hasVoted && (
             <Link href={`/poll/${poll.id}/vote`}>
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-vote-now">
+              <Button size="lg" data-testid="button-vote-now">
                 <Vote className="w-4 h-4 mr-2" />
                 Vote Now
               </Button>

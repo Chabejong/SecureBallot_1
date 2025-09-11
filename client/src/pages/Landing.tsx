@@ -138,7 +138,7 @@ export default function Landing() {
               {/* Sample Actions */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="flex-1"
                   onClick={() => window.location.href = "/api/login"}
                   data-testid="button-sample-vote"
                 >

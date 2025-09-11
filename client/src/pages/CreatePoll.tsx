@@ -378,7 +378,7 @@ export default function CreatePoll() {
                   <Button
                     type="submit"
                     disabled={createPollMutation.isPending}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    className=""
                     data-testid="button-publish-poll"
                   >
                     {createPollMutation.isPending ? "Publishing..." : "Publish Poll"}

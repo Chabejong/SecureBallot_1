@@ -264,7 +264,7 @@ export default function Results() {
         {isActive && (
           <div className="text-center mt-8">
             <Link href={`/poll/${id}/vote`}>
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" data-testid="button-vote-now">
+              <Button size="lg" data-testid="button-vote-now">
                 Participate in This Poll
               </Button>
             </Link>

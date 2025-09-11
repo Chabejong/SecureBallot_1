@@ -23,6 +23,8 @@
   --border: hsl(214, 32%, 91%);
   --input: hsl(214, 32%, 91%);
   --ring: hsl(220, 91%, 32%);
+  --button-hover: hsl(0, 0%, 85%);
+  --button-active: hsl(120, 40%, 85%);
   --chart-1: hsl(220, 91%, 32%);
   --chart-2: hsl(158, 77%, 40%);
   --chart-3: hsl(42, 93%, 56%);
@@ -72,6 +74,8 @@
   --border: hsl(210, 20%, 20%);
   --input: hsl(210, 20%, 20%);
   --ring: hsl(220, 91%, 48%);
+  --button-hover: hsl(0, 0%, 25%);
+  --button-active: hsl(120, 40%, 35%);
   --chart-1: hsl(220, 91%, 48%);
   --chart-2: hsl(158, 77%, 35%);
   --chart-3: hsl(42, 93%, 56%);

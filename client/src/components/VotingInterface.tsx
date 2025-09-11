@@ -99,7 +99,7 @@ export function VotingInterface({
           <Button
             onClick={onVote}
             disabled={!selectedOptionId || isSubmitting}
-            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            className="flex-1"
             size="lg"
             data-testid="button-submit-vote"
           >

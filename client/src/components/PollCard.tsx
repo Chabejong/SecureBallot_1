@@ -130,7 +130,7 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
         <div className="flex gap-2">
           {isActive ? (
             <Link href={`/poll/${poll.id}/vote`} className="flex-1">
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" data-testid={`button-vote-${poll.id}`}>
+              <Button className="w-full" data-testid={`button-vote-${poll.id}`}>
                 <Vote className="w-4 h-4 mr-2" />
                 Vote Now
               </Button>
