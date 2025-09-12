@@ -46,6 +46,7 @@ export const polls = pgTable("polls", {
   isAnonymous: boolean("is_anonymous").notNull().default(true),
   allowComments: boolean("allow_comments").notNull().default(false),
   allowVoteChanges: boolean("allow_vote_changes").notNull().default(true),
+  isMultipleChoice: boolean("is_multiple_choice").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   endDate: timestamp("end_date").notNull(),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
@@ -57,6 +58,7 @@ export const pollOptions = pgTable("poll_options", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
   text: varchar("text", { length: 255 }).notNull(),
+  imageUrl: varchar("image_url", { length: 500 }),
   order: integer("order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
