@@ -6,7 +6,10 @@ import { insertPollSchema, insertVoteSchema } from "@shared/schema";
 import { z } from "zod";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
-  options: z.array(z.string().min(1, "Option cannot be empty")).min(2, "At least 2 options required"),
+  options: z.array(z.object({
+    text: z.string().min(1, "Option text cannot be empty"),
+    imageUrl: z.string().url().optional().or(z.literal("")),
+  })).min(2, "At least 2 options required"),
   endDate: z.string().transform((dateString) => new Date(dateString)),
 }).omit({
   createdById: true, // We'll add this in the route
@@ -137,10 +140,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/polls/:id/vote', async (req: any, res) => {
     try {
       const pollId = req.params.id;
-      const { optionId } = req.body;
+      const { optionId, optionIds } = req.body;
       
-      if (!optionId) {
-        return res.status(400).json({ message: "Option ID is required" });
+      const votingOptions = optionIds || [optionId];
+      if (!votingOptions || votingOptions.length === 0) {
+        return res.status(400).json({ message: "At least one option ID is required" });
       }
 
       // Check if poll exists and is active
@@ -162,11 +166,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required for non-anonymous polls" });
       }
 
-      // Check if option belongs to this poll
-      const options = await storage.getPollOptions(pollId);
-      const validOption = options.find(opt => opt.id === optionId);
-      if (!validOption) {
-        return res.status(400).json({ message: "Invalid option" });
+      // Validate multiple selections are only allowed for multiple choice polls
+      if (votingOptions.length > 1 && !poll.isMultipleChoice) {
+        return res.status(400).json({ message: "Multiple selections are not allowed for this poll" });
+      }
+
+      // Check if all options belong to this poll
+      const pollOptions = await storage.getPollOptions(pollId);
+      const validOptionIds = pollOptions.map(opt => opt.id);
+      const invalidOptions = votingOptions.filter(id => !validOptionIds.includes(id));
+      if (invalidOptions.length > 0) {
+        return res.status(400).json({ message: "Invalid option(s) selected" });
       }
 
       // Robust user ID extraction (consistent with create poll route)
@@ -190,27 +200,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "You have already voted in this poll" });
         }
         
-        // If vote changes are allowed, update the existing vote
-        const updateVoteData = {
+        // For multiple choice, we need to handle multiple votes
+        if (poll.isMultipleChoice) {
+          // Remove all existing votes for this user/IP
+          await storage.removeUserVotes(pollId, identifierUserId, identifierIP);
+          
+          // Create new votes for each selected option
+          const votes = [];
+          for (const optionId of votingOptions) {
+            const voteData = {
+              pollId,
+              optionId,
+              voterId: identifierUserId,
+              ipAddress: identifierIP,
+            };
+            const vote = await storage.submitVote(voteData);
+            votes.push(vote);
+          }
+          
+          return res.status(200).json({ 
+            message: "Votes updated successfully", 
+            voteIds: votes.map(v => v.id) 
+          });
+        } else {
+          // Single choice - update existing vote
+          const updateVoteData = {
+            pollId,
+            optionId: votingOptions[0],
+            voterId: identifierUserId,
+            ipAddress: identifierIP,
+          };
+          
+          const updatedVote = await storage.updateVote(pollId, identifierUserId, identifierIP, updateVoteData);
+          return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
+        }
+      }
+
+      // Create new votes
+      if (poll.isMultipleChoice) {
+        const votes = [];
+        for (const optionId of votingOptions) {
+          const voteData = {
+            pollId,
+            optionId,
+            voterId: identifierUserId,
+            ipAddress: identifierIP,
+          };
+          const vote = await storage.submitVote(voteData);
+          votes.push(vote);
+        }
+        
+        res.status(201).json({ 
+          message: "Votes submitted successfully", 
+          voteIds: votes.map(v => v.id) 
+        });
+      } else {
+        const voteData = {
           pollId,
-          optionId,
+          optionId: votingOptions[0],
           voterId: identifierUserId,
           ipAddress: identifierIP,
         };
-        
-        const updatedVote = await storage.updateVote(pollId, identifierUserId, identifierIP, updateVoteData);
-        return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
+
+        const vote = await storage.submitVote(voteData);
+        res.status(201).json({ message: "Vote submitted successfully", voteId: vote.id });
       }
-
-      const voteData = {
-        pollId,
-        optionId,
-        voterId: identifierUserId,
-        ipAddress: identifierIP,
-      };
-
-      const vote = await storage.submitVote(voteData);
-      res.status(201).json({ message: "Vote submitted successfully", voteId: vote.id });
     } catch (error: any) {
       console.error("Error submitting vote:", error);
       if (error.name === 'ZodError') {

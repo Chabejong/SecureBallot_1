@@ -17,22 +17,26 @@ export default function Vote() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedOptionId, setSelectedOptionId] = useState<string>("");
+  const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
 
   const { data: poll, isLoading } = useQuery({
-    queryKey: ["/api/polls", id],
+    queryKey: [`/api/polls/${id}`],
+    enabled: !!id,
     select: (data): PollWithDetails => data as PollWithDetails,
   });
 
   const { data: hasVoted } = useQuery({
-    queryKey: ["/api/polls", id, "has-voted"],
+    queryKey: [`/api/polls/${id}/has-voted`],
     enabled: !!id,
     select: (data): { hasVoted: boolean } => data as { hasVoted: boolean },
   });
 
   const voteMutation = useMutation({
-    mutationFn: async (optionId: string) => {
-      return await apiRequest("POST", `/api/polls/${id}/vote`, { optionId });
+    mutationFn: async (optionIds: string | string[]) => {
+      return await apiRequest("POST", `/api/polls/${id}/vote`, { 
+        optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds,
+        optionIds: Array.isArray(optionIds) ? optionIds : [optionIds]
+      });
     },
     onSuccess: () => {
       const isVoteChange = hasVoted?.hasVoted;
@@ -42,8 +46,8 @@ export default function Vote() {
           ? "Your vote has been updated successfully!" 
           : "Your vote has been recorded successfully!",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/polls", id, "has-voted"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/polls", id, "results"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/has-voted`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/results`] });
       setLocation(`/poll/${id}/results`);
     },
     onError: (error: any) => {
@@ -66,11 +70,19 @@ export default function Vote() {
     },
   });
 
+  const handleOptionSelect = (optionId: string | string[]) => {
+    setSelectedOptionId(optionId);
+  };
+
   const handleVote = () => {
-    if (!selectedOptionId) {
+    const hasSelection = Array.isArray(selectedOptionId) 
+      ? selectedOptionId.length > 0
+      : selectedOptionId !== "";
+      
+    if (!hasSelection) {
       toast({
         title: "Error",
-        description: "Please select an option before voting.",
+        description: "Please select at least one option before voting.",
         variant: "destructive",
       });
       return;
@@ -185,7 +197,7 @@ export default function Vote() {
         <VotingInterface
           poll={poll}
           selectedOptionId={selectedOptionId}
-          onOptionSelect={setSelectedOptionId}
+          onOptionSelect={handleOptionSelect}
           onVote={handleVote}
           isSubmitting={voteMutation.isPending}
           hasVoted={hasVoted?.hasVoted}

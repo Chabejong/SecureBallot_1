@@ -18,6 +18,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Plus, X, Globe, Users, UserCheck, Calendar, Settings } from "lucide-react";
 
+const pollOptionSchema = z.object({
+  text: z.string().min(1, "Option text is required").max(255, "Option text too long"),
+  imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
+});
+
 const createPollSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title too long"),
   description: z.string().optional(),
@@ -26,8 +31,9 @@ const createPollSchema = z.object({
   isAnonymous: z.boolean().default(true),
   allowComments: z.boolean().default(false),
   allowVoteChanges: z.boolean().default(true),
+  isMultipleChoice: z.boolean().default(false),
   endDate: z.string().min(1, "End date is required"),
-  options: z.array(z.string().min(1, "Option cannot be empty")).min(2, "At least 2 options required"),
+  options: z.array(pollOptionSchema).min(2, "At least 2 options required"),
 });
 
 type CreatePollForm = z.infer<typeof createPollSchema>;
@@ -36,7 +42,10 @@ export default function CreatePoll() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [options, setOptions] = useState<string[]>(["", ""]);
+  const [options, setOptions] = useState<Array<{text: string, imageUrl: string}>>([
+    {text: "", imageUrl: ""}, 
+    {text: "", imageUrl: ""}
+  ]);
 
   const form = useForm<CreatePollForm>({
     resolver: zodResolver(createPollSchema),
@@ -48,23 +57,36 @@ export default function CreatePoll() {
       isAnonymous: true,
       allowComments: false,
       allowVoteChanges: true,
+      isMultipleChoice: false,
       endDate: "",
-      options: ["", ""],
+      options: [{text: "", imageUrl: ""}, {text: "", imageUrl: ""}],
     },
   });
 
   const createPollMutation = useMutation({
     mutationFn: async (data: CreatePollForm) => {
-      return await apiRequest("POST", "/api/polls", data);
+      if (import.meta.env.DEV) {
+        console.log('Making API request to create poll');
+      }
+      const response = await apiRequest("POST", "/api/polls", data);
+      const pollData = await response.json();
+      if (import.meta.env.DEV) {
+        console.log('Poll created successfully:', pollData);
+      }
+      return pollData;
     },
-    onSuccess: () => {
+    onSuccess: (pollData) => {
+      if (import.meta.env.DEV) {
+        console.log('onSuccess handler called with poll data:', pollData);
+      }
       toast({
         title: "Success",
         description: "Poll created successfully!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/polls"] });
-      setLocation("/");
+      // Redirect to poll details page instead of home page
+      setLocation(`/poll/${pollData.id}`);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -87,7 +109,7 @@ export default function CreatePoll() {
   });
 
   const addOption = () => {
-    setOptions([...options, ""]);
+    setOptions([...options, {text: "", imageUrl: ""}]);
   };
 
   const removeOption = (index: number) => {
@@ -98,9 +120,9 @@ export default function CreatePoll() {
     }
   };
 
-  const updateOption = (index: number, value: string) => {
+  const updateOption = (index: number, field: 'text' | 'imageUrl', value: string) => {
     const newOptions = [...options];
-    newOptions[index] = value;
+    newOptions[index][field] = value;
     setOptions(newOptions);
     form.setValue("options", newOptions);
   };
@@ -117,8 +139,13 @@ export default function CreatePoll() {
   }, []);
 
   const onSubmit = (data: CreatePollForm) => {
-    const filteredOptions = data.options.filter(option => option.trim() !== "");
+    console.log('Form submission started with data:', data);
+    
+    const filteredOptions = data.options.filter(option => option.text.trim() !== "");
+    console.log('Filtered options:', filteredOptions);
+    
     if (filteredOptions.length < 2) {
+      console.log('Validation failed: insufficient options');
       toast({
         title: "Error",
         description: "At least 2 options are required.",
@@ -127,10 +154,13 @@ export default function CreatePoll() {
       return;
     }
     
-    createPollMutation.mutate({
+    const submitData = {
       ...data,
       options: filteredOptions,
-    });
+    };
+    console.log('Submitting poll with data:', submitData);
+    
+    createPollMutation.mutate(submitData);
   };
 
   return (
@@ -264,29 +294,51 @@ export default function CreatePoll() {
                 {/* Poll Options */}
                 <div>
                   <FormLabel className="text-base font-medium">Poll Options</FormLabel>
-                  <div className="space-y-3 mt-3">
+                  <div className="space-y-4 mt-3">
                     {options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <Badge variant="outline" className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                          {index + 1}
-                        </Badge>
-                        <Input
-                          placeholder={`Option ${index + 1}...`}
-                          value={option}
-                          onChange={(e) => updateOption(index, e.target.value)}
-                          data-testid={`input-option-${index}`}
-                        />
-                        {options.length > 2 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeOption(index)}
-                            data-testid={`button-remove-option-${index}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-start space-x-3">
+                          <Badge variant="outline" className="flex-shrink-0 w-8 h-8 flex items-center justify-center mt-1">
+                            {index + 1}
+                          </Badge>
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              placeholder={`Option ${index + 1} text...`}
+                              value={option.text}
+                              onChange={(e) => updateOption(index, 'text', e.target.value)}
+                              data-testid={`input-option-text-${index}`}
+                            />
+                            <Input
+                              placeholder="Image URL (optional)..."
+                              value={option.imageUrl}
+                              onChange={(e) => updateOption(index, 'imageUrl', e.target.value)}
+                              data-testid={`input-option-image-${index}`}
+                            />
+                            {option.imageUrl && (
+                              <div className="w-16 h-16 border rounded overflow-hidden">
+                                <img 
+                                  src={option.imageUrl} 
+                                  alt={`Option ${index + 1} preview`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          {options.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeOption(index)}
+                              data-testid={`button-remove-option-${index}`}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ))}
                     <Button
@@ -341,6 +393,25 @@ export default function CreatePoll() {
                           </FormControl>
                           <FormLabel className="text-sm font-normal">
                             Anonymous voting
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="isMultipleChoice"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-multiple-choice"
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">
+                            Allow multiple selections
                           </FormLabel>
                         </FormItem>
                       )}

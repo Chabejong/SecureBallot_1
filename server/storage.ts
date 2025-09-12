@@ -24,7 +24,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Poll operations
-  createPoll(poll: InsertPoll, options: string[]): Promise<Poll>;
+  createPoll(poll: InsertPoll, options: Array<{text: string; imageUrl?: string}>): Promise<Poll>;
   getPoll(id: string): Promise<PollWithDetails | undefined>;
   getPolls(limit?: number): Promise<PollWithDetails[]>;
   getUserPolls(userId: string): Promise<PollWithDetails[]>;
@@ -64,13 +64,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Poll operations
-  async createPoll(pollData: InsertPoll, optionTexts: string[]): Promise<Poll> {
+  async createPoll(pollData: InsertPoll, options: Array<{text: string; imageUrl?: string}>): Promise<Poll> {
     return await db.transaction(async (tx) => {
       const [poll] = await tx.insert(polls).values(pollData).returning();
       
-      const optionsData = optionTexts.map((text, index) => ({
+      const optionsData = options.map((option, index) => ({
         pollId: poll.id,
-        text,
+        text: option.text,
+        imageUrl: option.imageUrl || null,
         order: index,
       }));
       
@@ -206,6 +207,20 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedVote;
+  }
+
+  async removeUserVotes(pollId: string, userId?: string, ipAddress?: string): Promise<void> {
+    let whereCondition;
+    
+    if (userId) {
+      whereCondition = and(eq(votes.pollId, pollId), eq(votes.voterId, userId));
+    } else if (ipAddress) {
+      whereCondition = and(eq(votes.pollId, pollId), eq(votes.ipAddress, ipAddress));
+    } else {
+      throw new Error("Either userId or ipAddress must be provided");
+    }
+
+    await db.delete(votes).where(whereCondition);
   }
 
   async hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean> {

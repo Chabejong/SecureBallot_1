@@ -14,7 +14,8 @@ export default function Results() {
   const { id } = useParams();
 
   const { data: pollResults, isLoading } = useQuery({
-    queryKey: ["/api/polls", id, "results"],
+    queryKey: [`/api/polls/${id}/results`],
+    enabled: !!id,
     select: (data): PollWithResults => data as PollWithResults,
   });
 

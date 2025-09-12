@@ -16,12 +16,13 @@ export default function PollDetails() {
   const { user } = useAuth();
 
   const { data: poll, isLoading } = useQuery({
-    queryKey: ["/api/polls", id],
+    queryKey: [`/api/polls/${id}`],
+    enabled: !!id,
     select: (data): PollWithDetails => data as PollWithDetails,
   });
 
   const { data: hasVoted } = useQuery({
-    queryKey: ["/api/polls", id, "has-voted"],
+    queryKey: [`/api/polls/${id}/has-voted`],
     enabled: !!id,
     select: (data): { hasVoted: boolean } => data as { hasVoted: boolean },
   });

@@ -7,8 +7,8 @@ import type { PollWithDetails } from "@shared/schema";
 
 interface VotingInterfaceProps {
   poll: PollWithDetails;
-  selectedOptionId: string;
-  onOptionSelect: (optionId: string) => void;
+  selectedOptionId: string | string[];
+  onOptionSelect: (optionId: string | string[]) => void;
   onVote: () => void;
   isSubmitting: boolean;
   hasVoted?: boolean;
@@ -68,46 +68,85 @@ export function VotingInterface({
 
         {/* Voting Options */}
         <div className="space-y-4 mb-8">
-          {poll.options.map((option, index) => (
-            <div key={option.id} className="relative">
-              <input
-                type="radio"
-                id={option.id}
-                name="vote"
-                value={option.id}
-                checked={selectedOptionId === option.id}
-                onChange={() => onOptionSelect(option.id)}
-                className="peer sr-only"
-                data-testid={`radio-vote-option-${index}`}
-              />
-              <label
-                htmlFor={option.id}
-                className="block w-full p-6 border border-border rounded-lg cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-foreground mb-1" data-testid={`text-vote-option-${index}`}>
-                      {option.text}
-                    </h4>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="w-5 h-5 border-2 border-primary rounded-full peer-checked:bg-primary peer-checked:border-primary relative">
-                      {selectedOptionId === option.id && (
-                        <div className="absolute inset-1 bg-white rounded-full"></div>
+          {poll.options.map((option, index) => {
+            const isSelected = poll.isMultipleChoice 
+              ? Array.isArray(selectedOptionId) && selectedOptionId.includes(option.id)
+              : selectedOptionId === option.id;
+
+            const handleOptionClick = () => {
+              if (poll.isMultipleChoice) {
+                const currentSelection = Array.isArray(selectedOptionId) ? selectedOptionId : [];
+                if (currentSelection.includes(option.id)) {
+                  onOptionSelect(currentSelection.filter(id => id !== option.id));
+                } else {
+                  onOptionSelect([...currentSelection, option.id]);
+                }
+              } else {
+                onOptionSelect(option.id);
+              }
+            };
+
+            return (
+              <div key={option.id} className="relative">
+                <input
+                  type={poll.isMultipleChoice ? "checkbox" : "radio"}
+                  id={option.id}
+                  name={poll.isMultipleChoice ? undefined : "vote"}
+                  value={option.id}
+                  checked={isSelected}
+                  onChange={handleOptionClick}
+                  className="peer sr-only"
+                  data-testid={`${poll.isMultipleChoice ? 'checkbox' : 'radio'}-vote-option-${index}`}
+                />
+                <label
+                  htmlFor={option.id}
+                  className="block w-full p-6 border border-border rounded-lg cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground mb-1" data-testid={`text-vote-option-${index}`}>
+                        {option.text}
+                      </h4>
+                      {option.imageUrl && (
+                        <img 
+                          src={option.imageUrl} 
+                          alt={option.text}
+                          className="mt-2 max-w-full h-32 object-cover rounded"
+                          data-testid={`image-vote-option-${index}`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center">
+                      {poll.isMultipleChoice ? (
+                        <div className={`w-5 h-5 border-2 ${isSelected ? 'border-primary bg-primary' : 'border-primary'} rounded flex items-center justify-center`}>
+                          {isSelected && (
+                            <div className="w-2 h-2 bg-white rounded-sm"></div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 border-2 border-primary rounded-full peer-checked:bg-primary peer-checked:border-primary relative">
+                          {isSelected && (
+                            <div className="absolute inset-1 bg-white rounded-full"></div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                </div>
-              </label>
-            </div>
-          ))}
+                </label>
+              </div>
+            );
+          })}
         </div>
 
         {/* Voting Actions */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={onVote}
-            disabled={!selectedOptionId || isSubmitting}
+            disabled={
+              poll.isMultipleChoice 
+                ? (!Array.isArray(selectedOptionId) || selectedOptionId.length === 0) || isSubmitting
+                : !selectedOptionId || isSubmitting
+            }
             className="flex-1"
             size="lg"
             data-testid="button-submit-vote"
@@ -115,7 +154,7 @@ export function VotingInterface({
             <Vote className="w-4 h-4 mr-2" />
             {isSubmitting 
               ? (hasVoted ? "Updating Vote..." : "Submitting Vote...") 
-              : (hasVoted ? "Change My Vote" : "Submit My Vote")}
+              : (hasVoted ? "Change My Vote" : `Submit My Vote${poll.isMultipleChoice && Array.isArray(selectedOptionId) && selectedOptionId.length > 1 ? 's' : ''}`)}
           </Button>
         </div>
       </CardContent>
