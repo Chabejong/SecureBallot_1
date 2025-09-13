@@ -16,11 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, X, Globe, Users, UserCheck, Calendar, Settings } from "lucide-react";
+import { Plus, X, Globe, Users, UserCheck, Calendar, Settings, Upload, Link, Trash2 } from "lucide-react";
 
 const pollOptionSchema = z.object({
   text: z.string().min(1, "Option text is required").max(255, "Option text too long"),
-  imageUrl: z.string().url("Invalid image URL").optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")).refine((val) => {
+    if (!val) return true;
+    return val.startsWith('data:') || /^https?:\/\/.+/.test(val);
+  }, "Must be a valid URL or uploaded image"),
 });
 
 const createPollSchema = z.object({
@@ -42,7 +45,7 @@ export default function CreatePoll() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [options, setOptions] = useState<Array<{text: string, imageUrl: string}>>([
+  const [options, setOptions] = useState<Array<{text: string, imageUrl: string, imageLoadError?: boolean}>>([
     {text: "", imageUrl: ""}, 
     {text: "", imageUrl: ""}
   ]);
@@ -123,8 +126,80 @@ export default function CreatePoll() {
   const updateOption = (index: number, field: 'text' | 'imageUrl', value: string) => {
     const newOptions = [...options];
     newOptions[index][field] = value;
+    // Reset image load error when URL changes
+    if (field === 'imageUrl') {
+      newOptions[index].imageLoadError = false;
+    }
     setOptions(newOptions);
     form.setValue("options", newOptions);
+  };
+
+  // Handle image load error
+  const handleImageError = (index: number) => {
+    const newOptions = [...options];
+    newOptions[index].imageLoadError = true;
+    setOptions(newOptions);
+  };
+
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Handle file upload
+  const handleFileUpload = async (index: number, file: File) => {
+    // File size limit: 500KB
+    const MAX_FILE_SIZE = 500 * 1024;
+    
+    if (!file || !file.type.startsWith('image/')) {
+      toast({
+        title: "Error",
+        description: "Please select a valid image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "Error",
+        description: "Image file size must be less than 500KB.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Only allow common image types for security
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Please use JPEG, PNG, GIF, or WebP image formats.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const base64 = await fileToBase64(file);
+      updateOption(index, 'imageUrl', base64);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process image. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Clear image
+  const clearImage = (index: number) => {
+    updateOption(index, 'imageUrl', '');
   };
 
   // Set minimum date to current date
@@ -308,24 +383,90 @@ export default function CreatePoll() {
                               onChange={(e) => updateOption(index, 'text', e.target.value)}
                               data-testid={`input-option-text-${index}`}
                             />
-                            <Input
-                              placeholder="Image URL (optional)..."
-                              value={option.imageUrl}
-                              onChange={(e) => updateOption(index, 'imageUrl', e.target.value)}
-                              data-testid={`input-option-image-${index}`}
-                            />
-                            {option.imageUrl && (
-                              <div className="w-16 h-16 border rounded overflow-hidden">
-                                <img 
-                                  src={option.imageUrl} 
-                                  alt={`Option ${index + 1} preview`}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
+                            
+                            {/* Image upload section */}
+                            <div className="space-y-2">
+                              <div className="text-sm font-medium text-muted-foreground">Image (optional)</div>
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <div className="flex-1">
+                                  <Input
+                                    placeholder="Image URL..."
+                                    value={option.imageUrl && !option.imageUrl.startsWith('data:') ? option.imageUrl : ''}
+                                    onChange={(e) => updateOption(index, 'imageUrl', e.target.value)}
+                                    data-testid={`input-option-image-url-${index}`}
+                                  />
+                                </div>
+                                <div className="flex-shrink-0">
+                                  <div className="relative">
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileUpload(index, file);
+                                      }}
+                                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                      data-testid={`input-option-file-${index}`}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="flex items-center gap-2 h-9 px-3"
+                                    >
+                                      <Upload className="w-4 h-4" />
+                                      Upload
+                                    </Button>
+                                  </div>
+                                </div>
                               </div>
-                            )}
+                              
+                              {/* Image preview and controls */}
+                              {option.imageUrl && (
+                                <div className="flex items-start gap-3">
+                                  <div className="w-16 h-16 border rounded overflow-hidden flex-shrink-0">
+                                    {option.imageLoadError ? (
+                                      <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-xs">
+                                        Failed to load
+                                      </div>
+                                    ) : (
+                                      <img 
+                                        src={option.imageUrl} 
+                                        alt={`Option ${index + 1} preview`}
+                                        className="w-full h-full object-cover"
+                                        onError={() => handleImageError(index)}
+                                        onLoad={() => {
+                                          // Reset error state on successful load
+                                          const newOptions = [...options];
+                                          newOptions[index].imageLoadError = false;
+                                          setOptions(newOptions);
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        {option.imageUrl.startsWith('data:') ? (
+                                          <span>Uploaded image</span>
+                                        ) : (
+                                          <span className="truncate">{option.imageUrl}</span>
+                                        )}
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => clearImage(index)}
+                                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                        data-testid={`button-clear-image-${index}`}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                           {options.length > 2 && (
                             <Button
