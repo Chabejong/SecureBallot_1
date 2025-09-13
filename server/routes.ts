@@ -145,6 +145,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all polls endpoint (for testing purposes)
+  app.delete('/api/polls', async (req, res) => {
+    try {
+      const deletedCount = await storage.deleteAllPolls();
+      res.json({ 
+        message: `Deleted ${deletedCount} poll(s) successfully`,
+        deletedCount 
+      });
+    } catch (error) {
+      console.error("Error deleting all polls:", error);
+      res.status(500).json({ message: "Failed to delete all polls" });
+    }
+  });
+
   // Voting routes
   app.post('/api/polls/:id/vote', async (req: any, res) => {
     try {
@@ -183,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if all options belong to this poll
       const pollOptions = await storage.getPollOptions(pollId);
       const validOptionIds = pollOptions.map(opt => opt.id);
-      const invalidOptions = votingOptions.filter(id => !validOptionIds.includes(id));
+      const invalidOptions = votingOptions.filter((id: string) => !validOptionIds.includes(id));
       if (invalidOptions.length > 0) {
         return res.status(400).json({ message: "Invalid option(s) selected" });
       }
@@ -240,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ipAddress: identifierIP,
           };
           
-          const updatedVote = await storage.updateVote(pollId, identifierUserId, identifierIP, updateVoteData);
+          const updatedVote = await storage.updateVote(pollId, updateVoteData, identifierUserId, identifierIP);
           return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
         }
       }

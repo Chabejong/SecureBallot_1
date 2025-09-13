@@ -30,10 +30,11 @@ export interface IStorage {
   getUserPolls(userId: string): Promise<PollWithDetails[]>;
   updatePoll(id: string, updates: Partial<InsertPoll>): Promise<Poll | undefined>;
   deletePoll(id: string): Promise<boolean>;
+  deleteAllPolls(): Promise<number>;
   
   // Voting operations
   submitVote(vote: InsertVote): Promise<Vote>;
-  updateVote(pollId: string, userId?: string, ipAddress?: string, vote: InsertVote): Promise<Vote>;
+  updateVote(pollId: string, vote: InsertVote, userId?: string, ipAddress?: string): Promise<Vote>;
   hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean>;
   getPollResults(pollId: string): Promise<PollWithResults | undefined>;
   
@@ -179,13 +180,18 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  async deleteAllPolls(): Promise<number> {
+    const result = await db.delete(polls);
+    return result.rowCount || 0;
+  }
+
   // Voting operations
   async submitVote(voteData: InsertVote): Promise<Vote> {
     const [vote] = await db.insert(votes).values(voteData).returning();
     return vote;
   }
 
-  async updateVote(pollId: string, userId?: string, ipAddress?: string, voteData: InsertVote): Promise<Vote> {
+  async updateVote(pollId: string, voteData: InsertVote, userId?: string, ipAddress?: string): Promise<Vote> {
     let whereCondition;
     
     if (userId) {
