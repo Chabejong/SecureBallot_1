@@ -19,6 +19,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Health check endpoint to handle repeated HEAD requests
+  app.head('/api', (req, res) => {
+    res.status(200).end();
+  });
+
+  app.get('/api', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'API is running' });
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
