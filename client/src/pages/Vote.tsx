@@ -33,10 +33,18 @@ export default function Vote() {
 
   const voteMutation = useMutation({
     mutationFn: async (optionIds: string | string[]) => {
-      return await apiRequest("POST", `/api/polls/${id}/vote`, { 
-        optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds,
-        optionIds: Array.isArray(optionIds) ? optionIds : [optionIds]
-      });
+      // Send appropriate request based on poll type
+      if (poll?.isMultipleChoice) {
+        // For multiple choice polls, send optionIds array
+        return await apiRequest("POST", `/api/polls/${id}/vote`, {
+          optionIds: Array.isArray(optionIds) ? optionIds : [optionIds]
+        });
+      } else {
+        // For single choice polls, send only optionId
+        return await apiRequest("POST", `/api/polls/${id}/vote`, {
+          optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds
+        });
+      }
     },
     onSuccess: () => {
       const isVoteChange = hasVoted?.hasVoted;
