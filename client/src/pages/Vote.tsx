@@ -70,6 +70,16 @@ export default function Vote() {
         }, 500);
         return;
       }
+      
+      // Handle "already voted" message as informational rather than error
+      if (error.message && error.message.includes("You have already voted in this poll")) {
+        toast({
+          title: "Already Voted",
+          description: "You have already submitted your vote for this poll. Thank you for participating!",
+        });
+        return;
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to submit vote. Please try again.",
