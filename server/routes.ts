@@ -8,7 +8,10 @@ import { z } from "zod";
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
     text: z.string().min(1, "Option text cannot be empty"),
-    imageUrl: z.string().url().optional().or(z.literal("")),
+    imageUrl: z.string().optional().or(z.literal("")).refine((val) => {
+      if (!val) return true;
+      return val.startsWith('data:') || /^https?:\/\/.+/.test(val);
+    }, "Must be a valid URL or uploaded image"),
   })).min(2, "At least 2 options required"),
   endDate: z.string().transform((dateString) => new Date(dateString)),
 }).omit({
