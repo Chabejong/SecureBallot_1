@@ -29,7 +29,6 @@ const pollOptionSchema = z.object({
 const createPollSchema = z.object({
   title: z.string().min(1, "Title is required").max(255, "Title too long"),
   description: z.string().optional(),
-  category: z.string().optional(),
   pollType: z.enum(["public", "members", "invited"]).default("public"),
   isAnonymous: z.boolean().default(true),
   allowComments: z.boolean().default(false),
@@ -55,7 +54,6 @@ export default function CreatePoll() {
     defaultValues: {
       title: "",
       description: "",
-      category: "",
       pollType: "public",
       isAnonymous: true,
       allowComments: false,
@@ -302,50 +300,23 @@ export default function CreatePoll() {
                 />
 
                 {/* Poll Details */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Poll Title</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Enter poll title..."
-                            {...field}
-                            data-testid="input-poll-title"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-category">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="community">Community</SelectItem>
-                            <SelectItem value="government">Government</SelectItem>
-                            <SelectItem value="education">Education</SelectItem>
-                            <SelectItem value="environment">Environment</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Poll Title <span className="text-red-500">*</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter poll title..."
+                          {...field}
+                          data-testid="input-poll-title"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -368,7 +339,7 @@ export default function CreatePoll() {
 
                 {/* Poll Options */}
                 <div>
-                  <FormLabel className="text-base font-medium">Poll Options</FormLabel>
+                  <FormLabel className="text-base font-medium">Poll Options <span className="text-red-500">*</span></FormLabel>
                   <div className="space-y-4 mt-3">
                     {options.map((option, index) => (
                       <div key={index} className="space-y-2">
@@ -504,7 +475,7 @@ export default function CreatePoll() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          End Date & Time
+                          End Date & Time <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
