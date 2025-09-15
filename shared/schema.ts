@@ -58,7 +58,7 @@ export const pollOptions = pgTable("poll_options", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
   text: varchar("text", { length: 255 }).notNull(),
-  imageUrl: varchar("image_url", { length: 500 }),
+  imageUrl: text("image_url"),
   order: integer("order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
