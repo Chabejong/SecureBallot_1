@@ -31,7 +31,6 @@ const createPollSchema = z.object({
   description: z.string().optional(),
   pollType: z.enum(["public", "members", "invited"]).default("public"),
   isAnonymous: z.boolean().default(true),
-  allowComments: z.boolean().default(false),
   allowVoteChanges: z.boolean().default(true),
   isMultipleChoice: z.boolean().default(false),
   endDate: z.string().min(1, "End date is required"),
@@ -56,7 +55,6 @@ export default function CreatePoll() {
       description: "",
       pollType: "public",
       isAnonymous: true,
-      allowComments: false,
       allowVoteChanges: true,
       isMultipleChoice: false,
       endDate: "",
@@ -529,24 +527,6 @@ export default function CreatePoll() {
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name="allowComments"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              data-testid="checkbox-allow-comments"
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">
-                            Allow comments
-                          </FormLabel>
-                        </FormItem>
-                      )}
-                    />
                     
                     <FormField
                       control={form.control}
