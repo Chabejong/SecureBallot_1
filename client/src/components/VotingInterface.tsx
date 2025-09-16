@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Shield, Vote, Clock, Users, Lock } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
@@ -22,7 +22,7 @@ export function VotingInterface({
   isSubmitting,
   hasVoted = false
 }: VotingInterfaceProps) {
-  const timeRemaining = formatDistanceToNow(new Date(poll.endDate), { addSuffix: true });
+  const endTime = format(new Date(poll.endDate), "MMMM d, h:mm a");
 
   return (
     <Card className="shadow-lg">
@@ -53,7 +53,7 @@ export function VotingInterface({
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-1" data-testid="text-voting-time-remaining">
               <Clock className="w-4 h-4" />
-              {timeRemaining}
+              Ends at: {endTime}
             </span>
             <span className="flex items-center gap-1" data-testid="text-voting-participant-count">
               <Users className="w-4 h-4" />

@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Clock, Users, BarChart3, Vote, Globe, User, UserCheck, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -61,7 +61,7 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
   };
 
   const isActive = poll.isActive && new Date() < new Date(poll.endDate);
-  const timeRemaining = formatDistanceToNow(new Date(poll.endDate), { addSuffix: true });
+  const endTime = format(new Date(poll.endDate), "MMMM d, h:mm a");
 
   const getPollTypeInfo = (type: string) => {
     switch (type) {
@@ -88,7 +88,7 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
           </Badge>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-sm" data-testid={`text-time-remaining-${poll.id}`}>
-              {isActive ? timeRemaining : `Ended ${timeRemaining}`}
+              {isActive ? `Ends at: ${endTime}` : `Ended at: ${endTime}`}
             </span>
             {showOwnership && (
               <Button

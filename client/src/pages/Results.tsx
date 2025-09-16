@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { BarChart3, Users, Clock, Shield, CheckCircle, AlertCircle, TrendingUp, Download, FileText, FileJson } from "lucide-react";
 import type { PollWithResults } from "@shared/schema";
 
@@ -125,7 +125,7 @@ export default function Results() {
 
   const isActive = pollResults.isActive && new Date() < new Date(pollResults.endDate);
   const totalVotes = pollResults.results.reduce((sum, result) => sum + result.voteCount, 0);
-  const timeText = formatDistanceToNow(new Date(pollResults.endDate), { addSuffix: true });
+  const endTime = format(new Date(pollResults.endDate), "MMMM d, h:mm a");
   const winningOption = pollResults.results.reduce((winner, current) => 
     current.voteCount > winner.voteCount ? current : winner, pollResults.results[0]);
 
@@ -202,7 +202,7 @@ export default function Results() {
                 </span>
                 <span className="flex items-center gap-1" data-testid="text-poll-status">
                   <Clock className="w-4 h-4" />
-                  {isActive ? `Ends ${timeText}` : `Ended ${timeText}`}
+                  {isActive ? `Ends at: ${endTime}` : `Ended at: ${endTime}`}
                 </span>
               </div>
             </CardContent>

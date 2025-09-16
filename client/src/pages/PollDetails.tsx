@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Vote, BarChart3, Clock, Users, Shield, User, CheckCircle, AlertCircle } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
@@ -67,7 +67,7 @@ export default function PollDetails() {
 
   const isActive = poll.isActive && new Date() < new Date(poll.endDate);
   const isOwner = user?.id === poll.createdById;
-  const timeRemaining = formatDistanceToNow(new Date(poll.endDate), { addSuffix: true });
+  const endTime = format(new Date(poll.endDate), "MMMM d, h:mm a");
 
   const getPollTypeInfo = (type: string) => {
     switch (type) {
@@ -144,7 +144,7 @@ export default function PollDetails() {
                   </span>
                   <span className="flex items-center gap-1" data-testid="text-time-remaining">
                     <Clock className="w-4 h-4" />
-                    {isActive ? `Ends ${timeRemaining}` : `Ended ${timeRemaining}`}
+                    {isActive ? `Ends at: ${endTime}` : `Ended at: ${endTime}`}
                   </span>
                 </div>
               </div>
