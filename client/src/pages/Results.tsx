@@ -6,18 +6,85 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
-import { BarChart3, Users, Clock, Shield, CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
+import { BarChart3, Users, Clock, Shield, CheckCircle, AlertCircle, TrendingUp, Download, FileText, FileJson } from "lucide-react";
 import type { PollWithResults } from "@shared/schema";
 
 export default function Results() {
   const { id } = useParams();
+  const { toast } = useToast();
 
   const { data: pollResults, isLoading } = useQuery({
     queryKey: [`/api/polls/${id}/results`],
     enabled: !!id,
     select: (data): PollWithResults => data as PollWithResults,
   });
+
+  const downloadCsv = async () => {
+    try {
+      const response = await fetch(`/api/polls/${id}/export?format=csv`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${pollResults?.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "CSV file has been downloaded successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export results. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadJson = async () => {
+    try {
+      const response = await fetch(`/api/polls/${id}/export?format=json`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Export failed');
+      }
+      
+      const data = await response.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${pollResults?.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Successful",
+        description: "JSON file has been downloaded successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export results. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -212,6 +279,46 @@ export default function Results() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Export Results */}
+        {!isActive && totalVotes > 0 && (
+          <Card className="shadow-lg mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Export Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Download the poll results in your preferred format. Export is available after the poll has ended.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={downloadCsv} 
+                  variant="outline" 
+                  className="flex-1"
+                  data-testid="button-export-csv"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download CSV
+                </Button>
+                <Button 
+                  onClick={downloadJson} 
+                  variant="outline" 
+                  className="flex-1"
+                  data-testid="button-export-json"
+                >
+                  <FileJson className="w-4 h-4 mr-2" />
+                  Download JSON
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Files will be saved as "{pollResults?.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.csv" and "{pollResults?.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.json"
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Audit Trail */}
         <Card className="shadow-lg">

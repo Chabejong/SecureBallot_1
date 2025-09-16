@@ -300,6 +300,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/polls/:id/export', async (req: any, res) => {
+    try {
+      const pollId = req.params.id;
+      const format = req.query.format as string;
+      
+      if (!format || !['csv', 'json'].includes(format)) {
+        return res.status(400).json({ message: "Format must be 'csv' or 'json'" });
+      }
+
+      // Get poll results
+      const pollResults = await storage.getPollResults(pollId);
+      if (!pollResults) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if poll has ended
+      const now = new Date();
+      if (now < pollResults.endDate) {
+        return res.status(403).json({ message: "Poll has not ended yet. Export is only available after the poll ends." });
+      }
+
+      if (format === 'csv') {
+        // Generate CSV
+        const csvLines = [
+          'Option,Votes,Percentage',
+          ...pollResults.results.map(result => 
+            `"${result.text.replace(/"/g, '""')}",${result.voteCount},${result.percentage}%`
+          )
+        ];
+        
+        const csvContent = csvLines.join('\n');
+        const filename = `${pollResults.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.csv`;
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(csvContent);
+      } else {
+        // Generate JSON
+        const jsonData = {
+          id: pollResults.id,
+          title: pollResults.title,
+          description: pollResults.description,
+          endedAt: pollResults.endDate,
+          totalVotes: pollResults.results.reduce((sum, result) => sum + result.voteCount, 0),
+          options: pollResults.results.map(result => ({
+            id: result.optionId,
+            text: result.text,
+            votes: result.voteCount,
+            percentage: result.percentage
+          }))
+        };
+        
+        const filename = `${pollResults.title.replace(/[^a-zA-Z0-9]/g, '_')}_Results.json`;
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.json(jsonData);
+      }
+    } catch (error) {
+      console.error("Error exporting poll results:", error);
+      res.status(500).json({ message: "Failed to export poll results" });
+    }
+  });
+
   app.get('/api/polls/:id/has-voted', async (req: any, res) => {
     try {
       const pollId = req.params.id;
