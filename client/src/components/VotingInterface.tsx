@@ -74,6 +74,9 @@ export function VotingInterface({
               : selectedOptionId === option.id;
 
             const handleOptionClick = () => {
+              // Prevent option changes while submitting
+              if (isSubmitting) return;
+              
               if (poll.isMultipleChoice) {
                 const currentSelection = Array.isArray(selectedOptionId) ? selectedOptionId : [];
                 if (currentSelection.includes(option.id)) {
@@ -100,7 +103,11 @@ export function VotingInterface({
                 />
                 <label
                   htmlFor={option.id}
-                  className="block w-full p-6 border border-border rounded-lg cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5 transition-colors"
+                  className={`block w-full p-6 border border-border rounded-lg transition-colors ${
+                    isSubmitting 
+                      ? 'cursor-not-allowed opacity-60' 
+                      : 'cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">

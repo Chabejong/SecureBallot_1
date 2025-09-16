@@ -18,6 +18,7 @@ export default function Vote() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: poll, isLoading } = useQuery({
     queryKey: [`/api/polls/${id}`],
@@ -86,13 +87,22 @@ export default function Vote() {
         variant: "destructive",
       });
     },
+    onSettled: () => {
+      // Clear submitting state regardless of success or error
+      setIsSubmitting(false);
+    },
   });
 
   const handleOptionSelect = (optionId: string | string[]) => {
+    // Prevent option changes while submitting
+    if (isSubmitting || voteMutation.isPending) return;
     setSelectedOptionId(optionId);
   };
 
   const handleVote = () => {
+    // Prevent multiple submissions
+    if (isSubmitting || voteMutation.isPending) return;
+    
     const hasSelection = Array.isArray(selectedOptionId) 
       ? selectedOptionId.length > 0
       : selectedOptionId !== "";
@@ -105,6 +115,9 @@ export default function Vote() {
       });
       return;
     }
+    
+    // Set submitting state immediately before mutation
+    setIsSubmitting(true);
     voteMutation.mutate(selectedOptionId);
   };
 
@@ -217,7 +230,7 @@ export default function Vote() {
           selectedOptionId={selectedOptionId}
           onOptionSelect={handleOptionSelect}
           onVote={handleVote}
-          isSubmitting={voteMutation.isPending}
+          isSubmitting={isSubmitting || voteMutation.isPending}
           hasVoted={hasVoted?.hasVoted}
         />
 
