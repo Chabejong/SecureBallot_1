@@ -15,7 +15,7 @@ import {
   type PollWithResults,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, count } from "drizzle-orm";
+import { eq, desc, and, sql, count, lt, inArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -40,6 +40,9 @@ export interface IStorage {
   
   // Poll options
   getPollOptions(pollId: string): Promise<PollOption[]>;
+  
+  // Cleanup operations
+  deleteExpiredPolls(cutoff: Date): Promise<{ pollsDeleted: number; votesDeleted: number; }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -286,6 +289,45 @@ export class DatabaseStorage implements IStorage {
       .from(pollOptions)
       .where(eq(pollOptions.pollId, pollId))
       .orderBy(pollOptions.order);
+  }
+
+  // Cleanup operations
+  async deleteExpiredPolls(cutoff: Date): Promise<{ pollsDeleted: number; votesDeleted: number; }> {
+    return await db.transaction(async (tx) => {
+      // First, find expired polls
+      const expiredPolls = await tx
+        .select({ id: polls.id })
+        .from(polls)
+        .where(lt(polls.endDate, cutoff));
+
+      if (expiredPolls.length === 0) {
+        return { pollsDeleted: 0, votesDeleted: 0 };
+      }
+
+      const expiredPollIds = expiredPolls.map(poll => poll.id);
+
+      // Count votes before deletion
+      const voteCountResult = await tx
+        .select({ count: count() })
+        .from(votes)
+        .where(inArray(votes.pollId, expiredPollIds));
+      
+      const votesDeleted = voteCountResult[0]?.count || 0;
+
+      // Delete votes first (due to foreign key constraints)
+      await tx.delete(votes).where(inArray(votes.pollId, expiredPollIds));
+      
+      // Delete poll options
+      await tx.delete(pollOptions).where(inArray(pollOptions.pollId, expiredPollIds));
+      
+      // Delete polls
+      await tx.delete(polls).where(inArray(polls.id, expiredPollIds));
+
+      return {
+        pollsDeleted: expiredPolls.length,
+        votesDeleted: Number(votesDeleted)
+      };
+    });
   }
 }
 

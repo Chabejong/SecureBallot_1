@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
@@ -36,8 +37,47 @@ app.use((req, res, next) => {
   next();
 });
 
+// Cleanup scheduler
+let cleanupRunning = false;
+
+const runCleanupTask = async () => {
+  if (cleanupRunning) {
+    log("Cleanup task already running, skipping...");
+    return;
+  }
+
+  cleanupRunning = true;
+  const startTime = new Date();
+  
+  try {
+    // Delete polls older than 48 hours
+    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const result = await storage.deleteExpiredPolls(cutoffDate);
+    
+    const endTime = new Date();
+    const duration = endTime.getTime() - startTime.getTime();
+    
+    log(`Cleanup task completed in ${duration}ms: deleted ${result.pollsDeleted} polls and ${result.votesDeleted} votes older than ${cutoffDate.toISOString()}`);
+  } catch (error) {
+    log(`Cleanup task failed: ${error}`);
+    console.error("Cleanup task error:", error);
+  } finally {
+    cleanupRunning = false;
+  }
+};
+
 (async () => {
   const server = await registerRoutes(app);
+
+  // Add admin cleanup endpoint for manual testing
+  app.post('/api/admin/cleanup', async (req, res) => {
+    try {
+      await runCleanupTask();
+      res.json({ message: "Cleanup task triggered successfully" });
+    } catch (error: any) {
+      res.status(500).json({ message: "Cleanup task failed", error: error.message });
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -68,4 +108,21 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Schedule daily cleanup task (24 hours = 24 * 60 * 60 * 1000 ms)
+  const DAILY_INTERVAL = 24 * 60 * 60 * 1000;
+  
+  // Run cleanup once on startup (after a short delay to ensure DB is ready)
+  setTimeout(async () => {
+    log("Running initial cleanup task...");
+    await runCleanupTask();
+  }, 5000);
+  
+  // Schedule cleanup to run daily
+  setInterval(async () => {
+    log("Running scheduled cleanup task...");
+    await runCleanupTask();
+  }, DAILY_INTERVAL);
+  
+  log("Daily cleanup scheduler initialized - will run every 24 hours");
 })();
