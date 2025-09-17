@@ -38,9 +38,9 @@
   --sidebar-accent-foreground: hsl(220, 91%, 32%);
   --sidebar-border: hsl(214, 32%, 91%);
   --sidebar-ring: hsl(220, 91%, 32%);
-  --font-sans: 'Inter', sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: 'Fira Code', monospace;
+  --font-sans: Inter;
+  --font-serif: Architects Daughter;
+  --font-mono: Fira Code;
   --radius: 8px;
   --shadow-2xs: 0px 1px 2px 0px hsl(220, 91%, 32%, 0.05);
   --shadow-xs: 0px 1px 2px 0px hsl(220, 91%, 32%, 0.05);

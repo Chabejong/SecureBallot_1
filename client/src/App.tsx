@@ -10,6 +10,7 @@ import CreatePoll from "@/pages/CreatePoll";
 import PollDetails from "@/pages/PollDetails";
 import Vote from "@/pages/Vote";
 import Results from "@/pages/Results";
+import HowItWorks from "@/pages/HowItWorks";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,7 +19,10 @@ function Router() {
   return (
     <Switch>
       {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/how-it-works" component={HowItWorks} />
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
@@ -26,6 +30,7 @@ function Router() {
           <Route path="/poll/:id" component={PollDetails} />
           <Route path="/poll/:id/vote" component={Vote} />
           <Route path="/poll/:id/results" component={Results} />
+          <Route path="/how-it-works" component={HowItWorks} />
         </>
       )}
       <Route component={NotFound} />

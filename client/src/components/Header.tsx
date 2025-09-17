@@ -54,20 +54,27 @@ export function Header() {
           </Link>
 
           {/* Navigation */}
-          {isAuthenticated && (
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link href="/">
-                <span className="text-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-polls">
-                  Polls
-                </span>
-              </Link>
-              <Link href="/create">
-                <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-create">
-                  Create
-                </span>
-              </Link>
-            </nav>
-          )}
+          <nav className="hidden md:flex items-center space-x-8">
+            {isAuthenticated && (
+              <>
+                <Link href="/">
+                  <span className="text-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-polls">
+                    Polls
+                  </span>
+                </Link>
+                <Link href="/create">
+                  <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-create">
+                    Create
+                  </span>
+                </Link>
+              </>
+            )}
+            <Link href="/how-it-works">
+              <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-how-it-works">
+                How it Works
+              </span>
+            </Link>
+          </nav>
 
           {/* Auth Actions */}
           <div className="flex items-center space-x-4">
@@ -205,6 +212,15 @@ export function Header() {
                         </Link>
                       </SheetClose>
                       
+                      <SheetClose asChild>
+                        <Link href="/how-it-works">
+                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-how-it-works">
+                            <CheckCircle className="w-4 h-4 mr-3" />
+                            How it Works
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
                       <div className="pt-4 mt-4 border-t">
                         <Button 
                           variant="ghost" 
@@ -218,15 +234,26 @@ export function Header() {
                       </div>
                     </>
                   ) : (
-                    <SheetClose asChild>
-                      <Button 
-                        className="w-full h-12"
-                        onClick={() => window.location.href = "/api/login"}
-                        data-testid="button-mobile-sign-in"
-                      >
-                        Sign In
-                      </Button>
-                    </SheetClose>
+                    <>
+                      <SheetClose asChild>
+                        <Link href="/how-it-works">
+                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-how-it-works-guest">
+                            <CheckCircle className="w-4 h-4 mr-3" />
+                            How it Works
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
+                      <SheetClose asChild>
+                        <Button 
+                          className="w-full h-12"
+                          onClick={() => window.location.href = "/api/login"}
+                          data-testid="button-mobile-sign-in"
+                        >
+                          Sign In
+                        </Button>
+                      </SheetClose>
+                    </>
                   )}
                 </div>
               </SheetContent>
