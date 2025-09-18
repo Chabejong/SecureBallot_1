@@ -21,8 +21,11 @@ export default function PollConfirmation() {
     enabled: !!params?.id,
   });
 
-  const shareableUrl = poll?.isPublicShareable && poll?.shareableSlug 
-    ? `${window.location.origin}/vote/${poll.shareableSlug}` 
+  // Generate shareable URL based on poll type
+  const shareableUrl = poll?.shareableSlug 
+    ? poll.isPublicShareable 
+      ? `${window.location.origin}/vote/${poll.shareableSlug}` // Anonymous voting for public polls
+      : `${window.location.origin}/auth/poll/${poll.shareableSlug}` // Authenticated access for members/invited polls
     : null;
 
   // Generate QR code
@@ -98,14 +101,14 @@ export default function PollConfirmation() {
     );
   }
 
-  if (!poll || !poll.isPublicShareable || !shareableUrl) {
+  if (!poll || !poll.shareableSlug || !shareableUrl) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Poll Not Found</h1>
-            <p className="text-muted-foreground">This poll is not publicly shareable or doesn't exist.</p>
+            <p className="text-muted-foreground">This poll doesn't exist or doesn't have sharing enabled.</p>
           </div>
         </div>
       </div>
@@ -125,11 +128,21 @@ export default function PollConfirmation() {
             </h1>
           </div>
           <p className="text-xl text-muted-foreground mb-2">
-            Your public poll is ready for anonymous voting
+            {poll.isPublicShareable 
+              ? "Your public poll is ready for anonymous voting"
+              : poll.pollType === 'members'
+                ? "Your members-only poll is ready for authenticated voting"
+                : "Your invited-only poll is ready for authorized participants"
+            }
           </p>
           <Badge variant="secondary" className="mb-4">
             <Share2 className="w-4 h-4 mr-1" />
-            Public Poll
+            {poll.isPublicShareable 
+              ? "Public Poll (Anonymous)"
+              : poll.pollType === 'members'
+                ? "Members Only Poll"
+                : "Invited Only Poll"
+            }
           </Badge>
         </div>
 
@@ -209,13 +222,30 @@ export default function PollConfirmation() {
             {/* Instructions */}
             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
-                📢 Share this link or QR code for anyone to vote anonymously
+                {poll.isPublicShareable 
+                  ? "📢 Share this link or QR code for anyone to vote anonymously"
+                  : poll.pollType === 'members'
+                    ? "🔐 Share this link with registered members - they'll need to log in to vote"
+                    : "🎯 Share this link with invited participants - they'll need to log in to vote"
+                }
               </h4>
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• No login or registration required for voters</li>
-                <li>• Each device can vote once (duplicate prevention enabled)</li>
-                <li>• Votes are completely anonymous</li>
-                <li>• Share via social media, email, or messaging apps</li>
+                {poll.isPublicShareable ? (
+                  <>
+                    <li>• No login or registration required for voters</li>
+                    <li>• Each device can vote once (duplicate prevention enabled)</li>
+                    <li>• Votes are completely anonymous</li>
+                    <li>• Share via social media, email, or messaging apps</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Voters must be logged in to participate</li>
+                    <li>• Each user can vote once per poll</li>
+                    <li>• {poll.isAnonymous ? "Votes are anonymous" : "Votes are attributed to users"}</li>
+                    <li>• Share via email or direct messaging for best results</li>
+                    {poll.pollType === 'invited' && <li>• Only authorized participants can access this poll</li>}
+                  </>
+                )}
               </ul>
             </div>
 

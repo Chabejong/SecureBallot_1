@@ -638,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "You have already voted on this poll" });
       }
 
-      await storage.vote(poll.id, optionId, userId);
+      await storage.submitVote({ pollId: poll.id, optionId, voterId: userId });
       
       res.json({ message: "Vote submitted successfully" });
     } catch (error) {
