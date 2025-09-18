@@ -125,11 +125,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { options, ...pollData } = validatedData;
       
-      // Generate unique shareable slug if poll is public shareable
+      // Generate unique shareable slug for all poll types
       const finalPollData = {
         ...pollData,
         createdById: userId,
-        shareableSlug: pollData.isPublicShareable ? await generateUniqueShareableSlug() : null
+        shareableSlug: await generateUniqueShareableSlug()
       };
       
       const poll = await storage.createPoll(
@@ -578,6 +578,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ hasVoted });
     } catch (error) {
       console.error("Error checking vote status:", error);
+      res.status(500).json({ message: "Failed to check vote status" });
+    }
+  });
+
+  // Authenticated poll access endpoints using shareable slugs
+  // Get poll data by slug for authenticated users (members, invited polls)
+  app.get('/api/auth/polls/:slug', isAuthenticated, async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if user has access based on poll type
+      if (poll.pollType === 'invited') {
+        // For invited polls, check if user is explicitly invited (implement invitation logic later)
+        // For now, allow access to all authenticated users
+      }
+      
+      res.json(poll);
+    } catch (error) {
+      console.error("Error fetching poll by slug:", error);
+      res.status(500).json({ message: "Failed to fetch poll" });
+    }
+  });
+
+  // Vote on poll by slug for authenticated users
+  app.post('/api/auth/polls/:slug/vote', isAuthenticated, async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const { optionId } = req.body;
+      
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if poll is active and not expired
+      if (!poll.isActive || new Date() > new Date(poll.endDate)) {
+        return res.status(400).json({ message: "Poll is closed or expired" });
+      }
+
+      // Check if user has access based on poll type
+      if (poll.pollType === 'invited') {
+        // For invited polls, check if user is explicitly invited (implement invitation logic later)
+        // For now, allow access to all authenticated users
+      }
+
+      // Check if user already voted
+      const hasVoted = await storage.hasUserVoted(poll.id, userId);
+      if (hasVoted && !poll.allowVoteChanges) {
+        return res.status(400).json({ message: "You have already voted on this poll" });
+      }
+
+      await storage.vote(poll.id, optionId, userId);
+      
+      res.json({ message: "Vote submitted successfully" });
+    } catch (error) {
+      console.error("Error submitting vote by slug:", error);
+      res.status(500).json({ message: "Failed to submit vote" });
+    }
+  });
+
+  // Get poll results by slug for authenticated users
+  app.get('/api/auth/polls/:slug/results', isAuthenticated, async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if user has access based on poll type
+      if (poll.pollType === 'invited') {
+        // For invited polls, check if user is explicitly invited (implement invitation logic later)
+        // For now, allow access to all authenticated users
+      }
+
+      const results = await storage.getPollResults(poll.id);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching poll results by slug:", error);
+      res.status(500).json({ message: "Failed to fetch poll results" });
+    }
+  });
+
+  // Check if authenticated user has voted on poll by slug
+  app.get('/api/auth/polls/:slug/has-voted', isAuthenticated, async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if user has access based on poll type
+      if (poll.pollType === 'invited') {
+        // For invited polls, check if user is explicitly invited (implement invitation logic later)
+        // For now, allow access to all authenticated users
+      }
+
+      const hasVoted = await storage.hasUserVoted(poll.id, userId);
+      res.json({ hasVoted });
+    } catch (error) {
+      console.error("Error checking vote status by slug:", error);
       res.status(500).json({ message: "Failed to check vote status" });
     }
   });
