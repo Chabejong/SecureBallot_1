@@ -6,6 +6,30 @@ The Ballot Box is a secure community voting platform built as a full-stack web a
 
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes
+
+## September 2025 - Authentication System Migration
+Successfully replaced Replit OIDC authentication with traditional email/password authentication system:
+
+### Backend Changes
+- Implemented Passport.js local strategy with bcrypt password hashing  
+- Created email/password registration and login API endpoints
+- Updated all protected routes to use new authentication middleware
+- Modified user schema to include required password field
+
+### Frontend Changes  
+- Built comprehensive Auth.tsx component with registration and login forms
+- Updated routing to redirect unauthenticated users to /auth page
+- Implemented React Hook Form with Zod validation for form handling
+- Fixed form binding issues with component keys for proper React reconciliation
+- Added explicit navigation after successful login using wouter routing
+
+### Database Changes
+- Added password field to users table (VARCHAR, required)
+- Made email field required (NOT NULL) 
+- Cleared existing user data for clean authentication system migration
+- Sessions table continues to handle authentication state
+
 # System Architecture
 
 ## Frontend Architecture
@@ -20,7 +44,7 @@ The client is built with React 18 using TypeScript and follows a component-based
 ## Backend Architecture
 The server is an Express.js application with TypeScript:
 - **API Structure**: RESTful API design with organized route handlers
-- **Authentication**: Replit OIDC integration with Passport.js strategies
+- **Authentication**: Email/password authentication with Passport.js local strategy and bcrypt
 - **Session Management**: Express sessions with PostgreSQL storage
 - **Request Handling**: Middleware for logging, error handling, and authentication
 - **Development**: Hot reloading with Vite integration in development mode
@@ -33,17 +57,17 @@ PostgreSQL database with Drizzle ORM for type-safe database operations:
 - **Data Access**: Repository pattern implemented in storage layer with interface abstraction
 
 ## Key Data Models
-- **Users**: Authentication and profile information (required for Replit Auth)
-- **Sessions**: Session storage for user authentication (required for Replit Auth)
-- **Polls**: Poll metadata with configurable options (public/private, anonymous, end dates)
+- **Users**: User profiles with email, password (hashed), first name, last name, and profile image
+- **Sessions**: Session storage for user authentication state management
+- **Polls**: Poll metadata with configurable options (public/private, anonymous, end dates) 
 - **Poll Options**: Individual voting choices for each poll
 - **Votes**: Vote records with IP tracking for anonymous polls
 
-## Authentication & Authorization
-- **Provider**: Replit OIDC for secure authentication
+## Authentication & Authorization  
+- **Provider**: Email/password authentication with bcrypt password hashing
 - **Session Storage**: PostgreSQL-backed sessions with configurable TTL
-- **Route Protection**: Middleware-based authentication checks
-- **User Management**: Automatic user creation/updates on login
+- **Route Protection**: Middleware-based authentication checks for protected routes
+- **User Management**: User registration and login with secure password storage
 
 ## Frontend State Management
 - **Server State**: TanStack React Query with optimistic updates and cache invalidation
@@ -59,9 +83,9 @@ PostgreSQL database with Drizzle ORM for type-safe database operations:
 - **PostgreSQL**: Primary database for all application data
 
 ## Authentication
-- **Replit OIDC**: Primary authentication provider
-- **Passport.js**: Authentication middleware and strategy management
-- **OpenID Client**: OIDC protocol implementation
+- **Email/Password**: Traditional authentication with secure password hashing
+- **Passport.js**: Authentication middleware with local strategy
+- **bcrypt**: Password hashing and verification for secure credential storage
 
 ## UI & Styling
 - **Radix UI**: Headless component primitives for accessibility

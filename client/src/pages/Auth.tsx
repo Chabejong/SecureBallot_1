@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,6 +18,7 @@ export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const registerForm = useForm<RegisterUser>({
     resolver: zodResolver(registerUserSchema),
@@ -84,12 +86,20 @@ export default function Auth() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: async () => {
+      // Invalidate and refetch auth query to immediately update auth state
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Login successful!",
         description: "Welcome back!",
       });
+      
+      // Force navigation to home page after successful login
+      setTimeout(() => {
+        setLocation("/");
+      }, 100); // Small delay to ensure auth state is updated
     },
     onError: (error: any) => {
       toast({
@@ -128,7 +138,7 @@ export default function Auth() {
         </CardHeader>
         <CardContent className="space-y-4">
           {mode === "register" ? (
-            <Form {...registerForm}>
+            <Form key={`auth-${mode}`} {...registerForm}>
               <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -236,7 +246,7 @@ export default function Auth() {
               </form>
             </Form>
           ) : (
-            <Form {...loginForm}>
+            <Form key={`auth-${mode}`} {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
                   control={loginForm.control}
