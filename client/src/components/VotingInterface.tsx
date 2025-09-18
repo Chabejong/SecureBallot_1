@@ -103,10 +103,10 @@ export function VotingInterface({
                 />
                 <label
                   htmlFor={option.id}
-                  className={`block w-full p-6 border border-border rounded-lg transition-colors ${
+                  className={`block w-full p-6 border rounded-lg transition-colors ${
                     isSubmitting 
-                      ? 'cursor-not-allowed opacity-60' 
-                      : 'cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5'
+                      ? 'cursor-not-allowed opacity-60 border-border' 
+                      : `cursor-pointer hover:bg-muted/30 ${isSelected ? 'border-primary bg-primary/5' : 'border-border'}`
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -131,7 +131,7 @@ export function VotingInterface({
                           )}
                         </div>
                       ) : (
-                        <div className="w-5 h-5 border-2 border-primary rounded-full peer-checked:bg-primary peer-checked:border-primary relative">
+                        <div className={`w-5 h-5 border-2 ${isSelected ? 'border-primary bg-primary' : 'border-primary'} rounded-full relative`}>
                           {isSelected && (
                             <div className="absolute inset-1 bg-white rounded-full"></div>
                           )}

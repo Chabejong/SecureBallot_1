@@ -155,14 +155,6 @@
 }
 
 @layer components {
-  /* Custom component styles for voting interface */
-  .voting-option {
-    @apply relative block w-full p-6 border border-border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors;
-  }
-
-  .voting-option input:checked + label {
-    @apply border-primary bg-primary/5;
-  }
 
   .poll-card {
     @apply bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow;
