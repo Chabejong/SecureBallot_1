@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertPollSchema, insertVoteSchema } from "@shared/schema";
+import { setupAuth, isAuthenticated, registerUser } from "./localAuth";
+import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema } from "@shared/schema";
 import { z } from "zod";
+import passport from "passport";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
@@ -32,11 +33,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const validatedData = registerUserSchema.parse(req.body);
+      const user = await registerUser(validatedData);
+      res.status(201).json({ message: "Registration successful", user });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid registration data", errors: error.errors });
+      }
+      if (error.message === 'Email already registered') {
+        return res.status(409).json({ message: "Email already registered" });
+      }
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post('/api/auth/login', (req, res, next) => {
+    try {
+      const validatedData = loginUserSchema.parse(req.body);
+      
+      passport.authenticate('local', (err: any, user: any, info: any) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        if (!user) {
+          return res.status(401).json({ message: info?.message || "Invalid credentials" });
+        }
+        
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error("Session error:", err);
+            return res.status(500).json({ message: "Login failed" });
+          }
+          return res.json({ message: "Login successful", user });
+        });
+      })(req, res, next);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid login data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout(() => {
+      res.json({ message: "Logout successful" });
+    });
+  });
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -116,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = createPollWithOptionsSchema.parse(req.body);
       
       // Get user ID from authenticated user
-      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       
       if (!userId) {
         console.error('No user ID found in request:', req.user);
@@ -149,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/user/polls', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const polls = await storage.getUserPolls(userId);
       res.json(polls);
     } catch (error) {
@@ -160,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/polls/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const poll = await storage.getPoll(req.params.id);
       
       if (!poll) {
@@ -241,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Robust user ID extraction (consistent with create poll route)
-      const userId = req.isAuthenticated() ? (req.user?.claims?.sub || req.user?.sub || req.user?.id) : undefined;
+      const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
 
       // For non-anonymous polls, ensure we have a valid userId
@@ -402,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/polls/:id/has-voted', async (req: any, res) => {
     try {
       const pollId = req.params.id;
-      const userId = req.isAuthenticated() ? req.user?.claims?.sub : undefined;
+      const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
       
       const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
@@ -587,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/polls/:slug', isAuthenticated, async (req: any, res) => {
     try {
       const slug = req.params.slug;
-      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       
       const poll = await storage.getPollBySlug(slug);
       
@@ -612,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/polls/:slug/vote', isAuthenticated, async (req: any, res) => {
     try {
       const slug = req.params.slug;
-      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       const { optionId } = req.body;
       
       const poll = await storage.getPollBySlug(slug);
@@ -651,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/polls/:slug/results', isAuthenticated, async (req: any, res) => {
     try {
       const slug = req.params.slug;
-      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       
       const poll = await storage.getPollBySlug(slug);
       
@@ -677,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/polls/:slug/has-voted', isAuthenticated, async (req: any, res) => {
     try {
       const slug = req.params.slug;
-      const userId = req.user?.claims?.sub || req.user?.sub || req.user?.id;
+      const userId = req.user?.id;
       
       const poll = await storage.getPollBySlug(slug);
       
