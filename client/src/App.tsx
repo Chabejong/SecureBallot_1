@@ -12,6 +12,7 @@ import Vote from "@/pages/Vote";
 import Results from "@/pages/Results";
 import HowItWorks from "@/pages/HowItWorks";
 import PublicVote from "@/pages/PublicVote";
+import AuthenticatedPoll from "@/pages/AuthenticatedPoll";
 import PollConfirmation from "@/pages/PollConfirmation";
 import NotFound from "@/pages/not-found";
 
@@ -42,6 +43,9 @@ function Router() {
       {/* Public routes available to everyone */}
       <Route path="/vote/:slug" component={PublicVote} />
       <Route path="/how-it-works" component={HowItWorks} />
+      
+      {/* Authenticated poll access route */}
+      <Route path="/auth/poll/:slug" component={(props) => <ProtectedRoute component={AuthenticatedPoll} {...props} />} />
       
       {/* Home route - show Landing or Home based on auth */}
       <Route path="/" component={!isLoading && isAuthenticated ? Home : Landing} />
