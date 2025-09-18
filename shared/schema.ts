@@ -73,7 +73,12 @@ export const votes = pgTable("votes", {
   ipAddress: varchar("ip_address", { length: 45 }), // for tracking without user ID
   browserFingerprint: varchar("browser_fingerprint"), // for duplicate prevention in anonymous voting
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  // Unique constraint for authenticated users - one vote per user per poll
+  userPollUnique: index("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
+  // Unique constraint for anonymous users - one vote per device per poll  
+  anonymousDeviceUnique: index("votes_anonymous_device_unique").on(table.pollId, table.ipAddress, table.browserFingerprint).where(sql`voter_id IS NULL`),
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({

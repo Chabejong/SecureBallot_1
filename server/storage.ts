@@ -36,7 +36,7 @@ export interface IStorage {
   // Voting operations
   submitVote(vote: InsertVote): Promise<Vote>;
   updateVote(pollId: string, vote: InsertVote, userId?: string, ipAddress?: string): Promise<Vote>;
-  hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean>;
+  hasUserVoted(pollId: string, userId?: string, ipAddress?: string, browserFingerprint?: string): Promise<boolean>;
   getPollResults(pollId: string): Promise<PollWithResults | undefined>;
   
   // Poll options
@@ -58,9 +58,12 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
-        target: users.id,
+        target: users.email,
         set: {
-          ...userData,
+          // Don't update the ID - it's the primary key and referenced by foreign keys
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
         },
       })
@@ -258,12 +261,21 @@ export class DatabaseStorage implements IStorage {
     await db.delete(votes).where(whereCondition);
   }
 
-  async hasUserVoted(pollId: string, userId?: string, ipAddress?: string): Promise<boolean> {
+  async hasUserVoted(pollId: string, userId?: string, ipAddress?: string, browserFingerprint?: string): Promise<boolean> {
     let whereCondition;
     
     if (userId) {
+      // Authenticated user - check by user ID
       whereCondition = and(eq(votes.pollId, pollId), eq(votes.voterId, userId));
+    } else if (browserFingerprint && ipAddress) {
+      // Anonymous user - check by both IP and browser fingerprint for more reliable detection
+      whereCondition = and(
+        eq(votes.pollId, pollId), 
+        eq(votes.ipAddress, ipAddress),
+        eq(votes.browserFingerprint, browserFingerprint)
+      );
     } else if (ipAddress) {
+      // Fallback to IP only if no fingerprint available
       whereCondition = and(eq(votes.pollId, pollId), eq(votes.ipAddress, ipAddress));
     } else {
       return false;

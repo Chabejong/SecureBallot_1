@@ -416,6 +416,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public routes for shareable polls (no authentication required)
+  
+  // Get poll by shareable slug
+  app.get('/api/public/polls/:slug', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      // Only allow access to public shareable polls
+      if (!poll.isPublicShareable) {
+        return res.status(403).json({ message: "Poll is not publicly accessible" });
+      }
+      
+      res.json(poll);
+    } catch (error) {
+      console.error("Error fetching public poll:", error);
+      res.status(500).json({ message: "Failed to fetch poll" });
+    }
+  });
+
+  // Vote on poll by shareable slug (no authentication required)
+  app.post('/api/public/polls/:slug/vote', async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const { optionId, optionIds } = req.body;
+      
+      const votingOptions = optionIds || [optionId];
+      if (!votingOptions || votingOptions.length === 0) {
+        return res.status(400).json({ message: "At least one option ID is required" });
+      }
+
+      // Check if poll exists and is public shareable
+      const poll = await storage.getPollBySlug(slug);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      if (!poll.isPublicShareable) {
+        return res.status(403).json({ message: "Poll is not publicly accessible" });
+      }
+      
+      if (!poll.isActive) {
+        return res.status(400).json({ message: "Poll is not active" });
+      }
+      
+      if (new Date() > poll.endDate) {
+        return res.status(400).json({ message: "Poll has ended" });
+      }
+
+      // Public shareable polls should be anonymous by design
+      if (!poll.isAnonymous) {
+        return res.status(400).json({ message: "Public shareable polls must be anonymous" });
+      }
+
+      // Validate multiple selections are only allowed for multiple choice polls
+      if (votingOptions.length > 1 && !poll.isMultipleChoice) {
+        return res.status(400).json({ message: "Multiple selections are not allowed for this poll" });
+      }
+
+      // Check if all options belong to this poll
+      const pollOptions = await storage.getPollOptions(poll.id);
+      const validOptionIds = pollOptions.map(opt => opt.id);
+      const invalidOptions = votingOptions.filter((id: string) => !validOptionIds.includes(id));
+      if (invalidOptions.length > 0) {
+        return res.status(400).json({ message: "Invalid option(s) selected" });
+      }
+
+      // For public polls, use IP address and browser fingerprint for identification
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
+      
+      // Check if this device already voted (using IP + browser fingerprint)
+      const hasVoted = await storage.hasUserVoted(poll.id, undefined, ipAddress, browserFingerprint);
+      if (hasVoted) {
+        if (poll.allowVoteChanges) {
+          // Update existing vote
+          for (const optionId of votingOptions) {
+            const vote = {
+              pollId: poll.id,
+              optionId,
+              voterId: undefined, // Anonymous
+              ipAddress,
+              browserFingerprint: browserFingerprint?.substring(0, 255), // Truncate if too long
+            };
+            await storage.updateVote(poll.id, vote, undefined, ipAddress);
+          }
+          return res.json({ message: "Vote updated successfully" });
+        } else {
+          return res.status(400).json({ message: "You have already voted on this poll" });
+        }
+      }
+
+      // Submit new votes
+      for (const optionId of votingOptions) {
+        const vote = {
+          pollId: poll.id,
+          optionId,
+          voterId: undefined, // Anonymous
+          ipAddress,
+          browserFingerprint: browserFingerprint?.substring(0, 255), // Truncate if too long
+        };
+        await storage.submitVote(vote);
+      }
+
+      res.status(201).json({ message: "Vote submitted successfully" });
+    } catch (error: any) {
+      console.error("Error submitting vote:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid vote data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to submit vote" });
+    }
+  });
+
+  // Get poll results by shareable slug
+  app.get('/api/public/polls/:slug/results', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      if (!poll.isPublicShareable) {
+        return res.status(403).json({ message: "Poll is not publicly accessible" });
+      }
+      
+      const results = await storage.getPollResults(poll.id);
+      if (!results) {
+        return res.status(404).json({ message: "Poll results not found" });
+      }
+      
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching public poll results:", error);
+      res.status(500).json({ message: "Failed to fetch poll results" });
+    }
+  });
+
+  // Check if user has voted on a public poll
+  app.get('/api/public/polls/:slug/has-voted', async (req: any, res) => {
+    try {
+      const slug = req.params.slug;
+      const poll = await storage.getPollBySlug(slug);
+      
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      if (!poll.isPublicShareable) {
+        return res.status(403).json({ message: "Poll is not publicly accessible" });
+      }
+      
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
+      const hasVoted = await storage.hasUserVoted(poll.id, undefined, ipAddress, browserFingerprint);
+      
+      res.json({ hasVoted });
+    } catch (error) {
+      console.error("Error checking vote status:", error);
+      res.status(500).json({ message: "Failed to check vote status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

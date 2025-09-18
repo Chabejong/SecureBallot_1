@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy for proper IP detection in production
 app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 

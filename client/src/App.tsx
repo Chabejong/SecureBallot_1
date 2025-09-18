@@ -11,6 +11,8 @@ import PollDetails from "@/pages/PollDetails";
 import Vote from "@/pages/Vote";
 import Results from "@/pages/Results";
 import HowItWorks from "@/pages/HowItWorks";
+import PublicVote from "@/pages/PublicVote";
+import PollConfirmation from "@/pages/PollConfirmation";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +20,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Public routes available to everyone */}
+      <Route path="/vote/:slug" component={PublicVote} />
+      
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
@@ -28,6 +33,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/create" component={CreatePoll} />
           <Route path="/poll/:id" component={PollDetails} />
+          <Route path="/poll/:id/confirmation" component={PollConfirmation} />
           <Route path="/poll/:id/vote" component={Vote} />
           <Route path="/poll/:id/results" component={Results} />
           <Route path="/how-it-works" component={HowItWorks} />

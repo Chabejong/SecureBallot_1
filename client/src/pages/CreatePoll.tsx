@@ -86,8 +86,12 @@ export default function CreatePoll() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/polls"] });
-      // Redirect to poll details page instead of home page
-      setLocation(`/poll/${pollData.id}`);
+      
+      // Redirect to confirmation page for public polls, otherwise poll details page
+      const redirectPath = form.getValues().isPublicShareable 
+        ? `/poll/${pollData.id}/confirmation`
+        : `/poll/${pollData.id}`;
+      setLocation(redirectPath);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
