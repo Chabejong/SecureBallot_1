@@ -12,6 +12,7 @@ import PollDetails from "@/pages/PollDetails";
 import Vote from "@/pages/Vote";
 import Results from "@/pages/Results";
 import HowItWorks from "@/pages/HowItWorks";
+import Auth from "@/pages/Auth";
 import PublicVote from "@/pages/PublicVote";
 import AuthenticatedPoll from "@/pages/AuthenticatedPoll";
 import PollConfirmation from "@/pages/PollConfirmation";
@@ -37,7 +38,7 @@ function ProtectedRoute({ component: Component, ...props }: { component: React.C
   // If timer fired, redirect immediately
   if (redirectTimer > 0) {
     console.log('ProtectedRoute redirecting due to timeout');
-    return <Redirect to="/" />;
+    return <Redirect to="/auth" />;
   }
   
   // If we have a user and they're authenticated, show the component
@@ -46,10 +47,10 @@ function ProtectedRoute({ component: Component, ...props }: { component: React.C
     return <Component {...props} />;
   }
   
-  // If user is explicitly null and not loading, redirect
+  // If user is explicitly null and not loading, redirect to auth
   if (user === null && !isLoading) {
     console.log('ProtectedRoute redirecting - user is null and not loading');
-    return <Redirect to="/" />;
+    return <Redirect to="/auth" />;
   }
   
   // Otherwise, show loading
@@ -69,12 +70,13 @@ function Router() {
       {/* Public routes available to everyone */}
       <Route path="/vote/:slug" component={PublicVote} />
       <Route path="/how-it-works" component={HowItWorks} />
+      <Route path="/auth" component={Auth} />
       
       {/* Authenticated poll access route */}
       <Route path="/auth/poll/:slug" component={(props) => <ProtectedRoute component={AuthenticatedPoll} {...props} />} />
       
-      {/* Home route - show Landing or Home based on auth */}
-      <Route path="/" component={!isLoading && isAuthenticated ? Home : Landing} />
+      {/* Home route - redirect to auth if not authenticated */}
+      <Route path="/" component={!isLoading && isAuthenticated ? Home : () => <Redirect to="/auth" />} />
       
       {/* Protected routes - always registered but with auth checks */}
       <Route path="/create" component={(props) => <ProtectedRoute component={CreatePoll} {...props} />} />

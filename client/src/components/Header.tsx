@@ -2,7 +2,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, Shield, Menu, LogOut, User, Plus, X } from "lucide-react";
+import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +26,16 @@ export function Header() {
   const { isAuthenticated, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const getInitials = (user: any) => {
@@ -140,13 +149,19 @@ export function Header() {
                 </DropdownMenu>
               </div>
             ) : (
-              <Button 
-                className=""
-                onClick={() => window.location.href = "/api/login"}
-                data-testid="button-sign-in"
-              >
-                Sign In
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Link href="/auth">
+                  <Button variant="outline" size="sm" data-testid="button-sign-in">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth">
+                  <Button size="sm" data-testid="button-sign-up">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
             )}
 
             {/* Mobile menu */}
@@ -245,13 +260,27 @@ export function Header() {
                       </SheetClose>
                       
                       <SheetClose asChild>
-                        <Button 
-                          className="w-full h-12"
-                          onClick={() => window.location.href = "/api/login"}
-                          data-testid="button-mobile-sign-in"
-                        >
-                          Sign In
-                        </Button>
+                        <Link href="/auth">
+                          <Button 
+                            className="w-full h-12"
+                            data-testid="button-mobile-sign-in"
+                          >
+                            Sign In
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
+                      <SheetClose asChild>
+                        <Link href="/auth">
+                          <Button 
+                            variant="outline"
+                            className="w-full h-12"
+                            data-testid="button-mobile-sign-up"
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Sign Up
+                          </Button>
+                        </Link>
                       </SheetClose>
                     </>
                   )}
