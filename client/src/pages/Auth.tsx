@@ -20,6 +20,7 @@ export default function Auth() {
 
   const registerForm = useForm<RegisterUser>({
     resolver: zodResolver(registerUserSchema),
+    mode: "onSubmit", // Only validate on submit, not onChange
     defaultValues: {
       email: "",
       password: "",
@@ -30,6 +31,7 @@ export default function Auth() {
 
   const loginForm = useForm<LoginUser>({
     resolver: zodResolver(loginUserSchema),
+    mode: "onSubmit", // Only validate on submit, not onChange
     defaultValues: {
       email: "",
       password: "",
@@ -99,10 +101,14 @@ export default function Auth() {
   });
 
   const handleRegister = (data: RegisterUser) => {
+    console.log('Attempting to register with data:', data);
+    console.log('Form validation errors:', registerForm.formState.errors);
     registerMutation.mutate(data);
   };
 
   const handleLogin = (data: LoginUser) => {
+    console.log('Attempting to login with data:', data);
+    console.log('Form validation errors:', loginForm.formState.errors);
     loginMutation.mutate(data);
   };
 
@@ -212,6 +218,11 @@ export default function Auth() {
                   className="w-full"
                   disabled={registerMutation.isPending}
                   data-testid="button-register"
+                  onClick={() => {
+                    console.log('Register button clicked');
+                    console.log('Current form values:', registerForm.getValues());
+                    console.log('Form validation state:', registerForm.formState);
+                  }}
                 >
                   {registerMutation.isPending ? (
                     "Creating account..."
