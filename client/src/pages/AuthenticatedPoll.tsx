@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useRoute } from "wouter";
+import { useState, useEffect } from "react";
+import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { PollResults } from "@/components/PollResults";
@@ -17,24 +17,42 @@ import type { PollWithDetails, PollWithResults } from "@shared/schema";
 
 export default function AuthenticatedPoll() {
   const [, params] = useRoute("/auth/poll/:slug");
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showResults, setShowResults] = useState(false);
 
-  const { data: poll, isLoading: pollLoading } = useQuery<PollWithDetails>({
+  const { data: poll, isLoading: pollLoading, error: pollError } = useQuery<PollWithDetails>({
     queryKey: [`/api/auth/polls/${params?.slug}`],
     enabled: !!params?.slug,
+    retry: false,
   });
 
-  const { data: hasVoted, isLoading: hasVotedLoading } = useQuery<{ hasVoted: boolean }>({
+  const { data: hasVoted, isLoading: hasVotedLoading, error: hasVotedError } = useQuery<{ hasVoted: boolean }>({
     queryKey: [`/api/auth/polls/${params?.slug}/has-voted`],
     enabled: !!params?.slug,
+    retry: false,
   });
 
   const { data: results } = useQuery<PollWithResults>({
     queryKey: [`/api/auth/polls/${params?.slug}/results`],
     enabled: !!params?.slug && (hasVoted?.hasVoted || showResults),
+    retry: false,
   });
+
+  // Handle authentication errors
+  useEffect(() => {
+    const checkAuthError = (error: any) => {
+      if (error?.message?.includes('401') || error?.status === 401) {
+        setLocation('/');
+        return true;
+      }
+      return false;
+    };
+
+    if (pollError && checkAuthError(pollError)) return;
+    if (hasVotedError && checkAuthError(hasVotedError)) return;
+  }, [pollError, hasVotedError, setLocation]);
 
   const voteMutation = useMutation({
     mutationFn: async (optionId: string) => {

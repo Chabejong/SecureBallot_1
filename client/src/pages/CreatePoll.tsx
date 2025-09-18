@@ -59,10 +59,21 @@ export default function CreatePoll() {
       allowVoteChanges: true,
       isMultipleChoice: false,
       isPublicShareable: false,
-      endDate: undefined,
+      endDate: "",
       options: [{text: "", imageUrl: ""}, {text: "", imageUrl: ""}],
     },
   });
+
+  // Watch poll type changes to automatically manage isPublicShareable
+  const pollType = form.watch("pollType");
+  const isPublicShareable = form.watch("isPublicShareable");
+
+  useEffect(() => {
+    // Auto-disable public sharing for non-public polls
+    if (pollType !== "public" && isPublicShareable) {
+      form.setValue("isPublicShareable", false);
+    }
+  }, [pollType, isPublicShareable, form]);
 
   const createPollMutation = useMutation({
     mutationFn: async (data: CreatePollForm) => {
@@ -87,11 +98,8 @@ export default function CreatePoll() {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/polls"] });
       
-      // Redirect to confirmation page for public polls, otherwise poll details page
-      const redirectPath = form.getValues().isPublicShareable 
-        ? `/poll/${pollData.id}/confirmation`
-        : `/poll/${pollData.id}`;
-      setLocation(redirectPath);
+      // Always redirect to confirmation page so users can see shareable links
+      setLocation(`/poll/${pollData.id}/confirmation`);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -487,6 +495,9 @@ export default function CreatePoll() {
                             id="endDate"
                             {...field}
                             value={field.value || ""}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                            }}
                             data-testid="input-end-date"
                           />
                         </FormControl>
@@ -563,12 +574,20 @@ export default function CreatePoll() {
                             <Checkbox
                               checked={field.value}
                               onCheckedChange={field.onChange}
+                              disabled={pollType !== "public"}
                               data-testid="checkbox-public-shareable"
                             />
                           </FormControl>
-                          <FormLabel className="text-sm font-normal">
-                            Public Poll (Anyone with link can vote)
-                          </FormLabel>
+                          <div className="space-y-1">
+                            <FormLabel className={`text-sm font-normal ${pollType !== "public" ? "text-muted-foreground" : ""}`}>
+                              Enable anonymous voting (anyone with link can vote without signing in)
+                            </FormLabel>
+                            {pollType !== "public" && (
+                              <p className="text-xs text-muted-foreground">
+                                Only available for public polls
+                              </p>
+                            )}
+                          </div>
                         </FormItem>
                       )}
                     />

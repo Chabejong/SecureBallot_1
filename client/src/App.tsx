@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -18,21 +19,46 @@ import NotFound from "@/pages/not-found";
 
 // Protected route wrapper that handles auth states properly
 function ProtectedRoute({ component: Component, ...props }: { component: React.ComponentType<any> }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [redirectTimer, setRedirectTimer] = useState<number>(0);
   
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-lg">Loading...</div>
-      </div>
-    );
-  }
+  console.log('ProtectedRoute render - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user, 'timer:', redirectTimer);
   
-  if (!isAuthenticated) {
+  // Start redirect timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log('ProtectedRoute timeout - redirecting to login');
+      setRedirectTimer(Date.now());
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // If timer fired, redirect immediately
+  if (redirectTimer > 0) {
+    console.log('ProtectedRoute redirecting due to timeout');
     return <Redirect to="/" />;
   }
   
-  return <Component {...props} />;
+  // If we have a user and they're authenticated, show the component
+  if (user && isAuthenticated) {
+    console.log('ProtectedRoute allowing access to component');
+    return <Component {...props} />;
+  }
+  
+  // If user is explicitly null and not loading, redirect
+  if (user === null && !isLoading) {
+    console.log('ProtectedRoute redirecting - user is null and not loading');
+    return <Redirect to="/" />;
+  }
+  
+  // Otherwise, show loading
+  console.log('ProtectedRoute showing loading state');
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-pulse text-lg">Loading...</div>
+    </div>
+  );
 }
 
 function Router() {
