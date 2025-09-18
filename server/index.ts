@@ -85,7 +85,7 @@ const runCleanupTask = async () => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Removed throw err to prevent app crashes
   });
 
   // importantly only setup vite in development and after

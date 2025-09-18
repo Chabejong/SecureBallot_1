@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -75,9 +76,9 @@ export const votes = pgTable("votes", {
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   // Unique constraint for authenticated users - one vote per user per poll
-  userPollUnique: index("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
+  userPollUnique: uniqueIndex("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
   // Unique constraint for anonymous users - one vote per device per poll  
-  anonymousDeviceUnique: index("votes_anonymous_device_unique").on(table.pollId, table.ipAddress, table.browserFingerprint).where(sql`voter_id IS NULL`),
+  anonymousDeviceUnique: uniqueIndex("votes_anonymous_device_unique").on(table.pollId, table.ipAddress, table.browserFingerprint).where(sql`voter_id IS NULL`),
 }));
 
 // Relations

@@ -113,9 +113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/polls', isAuthenticated, async (req: any, res) => {
     try {
-      console.log('User object:', req.user);
-      console.log('Request body:', req.body);
-      
       const validatedData = createPollWithOptionsSchema.parse(req.body);
       
       // Get user ID from authenticated user
