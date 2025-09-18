@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield } from "lucide-react";
+import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2 } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -90,7 +90,19 @@ export default function HowItWorks() {
                   </Badge>
                   <div className="flex-1">
                     <p className="text-muted-foreground">
-                      Public polls can be shared by link. Both viewing poll details and voting require sign-in to the platform. Perfect for sharing on social media to encourage community participation.
+                      Public polls can be shared with anyone using a unique shareable link. Voting is completely anonymous—no sign-in required. Perfect for gathering feedback from a wide audience via social media, email, or QR codes.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-4 p-4 border border-border rounded-lg">
+                  <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                    <Share2 className="w-3 h-3 mr-1" />
+                    Public Poll (Anonymous)
+                  </Badge>
+                  <div className="flex-1">
+                    <p className="text-muted-foreground">
+                      Enable "Anyone with link can vote" to create a shareable poll where people can vote without creating an account. Each device can vote once, and you'll get a unique link plus a downloadable QR code for easy sharing.
                     </p>
                   </div>
                 </div>
@@ -122,12 +134,68 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 3: Special Features */}
+          {/* Section 3: Sharing Your Poll */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Share2 className="w-6 h-6 text-primary" />
+                3. Sharing Your Poll
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Make it easy for people to find and participate in your public polls:
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                  <Share2 className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-foreground">Shareable Links</p>
+                    <p className="text-sm text-muted-foreground">Every public poll gets a unique, easy-to-share URL that works on any device. No sign-up required for voters!</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                  <QrCode className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-foreground">QR Code Generation</p>
+                    <p className="text-sm text-muted-foreground">Automatically generate and download QR codes for your polls. Perfect for posters, presentations, or events.</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg md:col-span-2">
+                  <Shield className="w-5 h-5 text-purple-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-foreground">Duplicate Vote Prevention</p>
+                    <p className="text-sm text-muted-foreground">Each device can only vote once per poll using advanced fingerprinting technology, ensuring fair and accurate results without requiring user accounts.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary mb-2">How to Enable Anonymous Voting:</p>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>When creating your poll, toggle ON "Public Poll (Anyone with link can vote)"</li>
+                      <li>After creating the poll, you'll see a confirmation page with your shareable link</li>
+                      <li>Download the QR code or copy the link to share via social media, email, or messaging</li>
+                      <li>Anyone with the link can vote immediately—no registration required!</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 4: Special Features */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Camera className="w-6 h-6 text-primary" />
-                3. Special Features
+                4. Special Features
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -179,12 +247,12 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 4: Accessibility */}
+          {/* Section 5: Accessibility */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Smartphone className="w-6 h-6 text-primary" />
-                4. Accessibility
+                5. Accessibility
               </CardTitle>
             </CardHeader>
             <CardContent>
