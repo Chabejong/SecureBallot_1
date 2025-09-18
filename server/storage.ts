@@ -26,6 +26,7 @@ export interface IStorage {
   // Poll operations
   createPoll(poll: InsertPoll, options: Array<{text: string; imageUrl?: string}>): Promise<Poll>;
   getPoll(id: string): Promise<PollWithDetails | undefined>;
+  getPollBySlug(slug: string): Promise<PollWithDetails | undefined>;
   getPolls(limit?: number): Promise<PollWithDetails[]>;
   getUserPolls(userId: string): Promise<PollWithDetails[]>;
   updatePoll(id: string, updates: Partial<InsertPoll>): Promise<Poll | undefined>;
@@ -101,6 +102,31 @@ export class DatabaseStorage implements IStorage {
     if (!result[0]) return undefined;
 
     const options = await this.getPollOptions(id);
+
+    return {
+      ...result[0].poll,
+      creator: result[0].creator!,
+      options,
+      voteCount: result[0].voteCount || 0,
+    };
+  }
+
+  async getPollBySlug(slug: string): Promise<PollWithDetails | undefined> {
+    const result = await db
+      .select({
+        poll: polls,
+        creator: users,
+        voteCount: sql<number>`cast(count(${votes.id}) as int)`,
+      })
+      .from(polls)
+      .leftJoin(users, eq(polls.createdById, users.id))
+      .leftJoin(votes, eq(polls.id, votes.pollId))
+      .where(eq(polls.shareableSlug, slug))
+      .groupBy(polls.id, users.id);
+
+    if (!result[0]) return undefined;
+
+    const options = await this.getPollOptions(result[0].poll.id);
 
     return {
       ...result[0].poll,

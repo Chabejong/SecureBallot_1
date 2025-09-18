@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalPollData = {
         ...pollData,
         createdById: userId,
-        shareableSlug: pollData.isPublicShareable ? generateShareableSlug() : null
+        shareableSlug: pollData.isPublicShareable ? await generateUniqueShareableSlug() : null
       };
       
       const poll = await storage.createPoll(
