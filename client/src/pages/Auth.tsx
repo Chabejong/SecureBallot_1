@@ -146,7 +146,7 @@ export default function Auth() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="John" data-testid="input-first-name" {...field} />
                         </FormControl>
@@ -159,7 +159,7 @@ export default function Auth() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Last Name <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" data-testid="input-last-name" {...field} />
                         </FormControl>
@@ -174,7 +174,7 @@ export default function Auth() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -193,7 +193,7 @@ export default function Auth() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Password <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
