@@ -49,7 +49,7 @@ export const polls = pgTable("polls", {
   isMultipleChoice: boolean("is_multiple_choice").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   isPublicShareable: boolean("is_public_shareable").notNull().default(false), // for anonymous voting via shareable links
-  shareableSlug: varchar("shareable_slug", { length: 50 }), // unique identifier for shareable links
+  shareableSlug: varchar("shareable_slug", { length: 50 }).unique(), // unique identifier for shareable links
   endDate: timestamp("end_date").notNull(),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),

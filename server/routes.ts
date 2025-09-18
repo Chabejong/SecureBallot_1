@@ -81,6 +81,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to generate unique shareable slug with collision checking
+  const generateUniqueShareableSlug = async (): Promise<string> => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    while (attempts < maxAttempts) {
+      let slug = '';
+      for (let i = 0; i < 8; i++) {
+        slug += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      // Check if slug already exists
+      try {
+        const existingPoll = await storage.getPollBySlug(slug);
+        if (!existingPoll) {
+          return slug;
+        }
+      } catch (error) {
+        // If getPollBySlug doesn't exist or errors, slug is probably unique
+        return slug;
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback: generate a timestamp-based slug if all attempts fail
+    return `poll_${Date.now().toString(36)}`;
+  };
+
   app.post('/api/polls', isAuthenticated, async (req: any, res) => {
     try {
       console.log('User object:', req.user);
@@ -97,8 +127,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { options, ...pollData } = validatedData;
+      
+      // Generate unique shareable slug if poll is public shareable
+      const finalPollData = {
+        ...pollData,
+        createdById: userId,
+        shareableSlug: pollData.isPublicShareable ? generateShareableSlug() : null
+      };
+      
       const poll = await storage.createPoll(
-        { ...pollData, createdById: userId },
+        finalPollData,
         options
       );
       

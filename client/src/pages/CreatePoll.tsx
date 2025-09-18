@@ -33,7 +33,8 @@ const createPollSchema = z.object({
   isAnonymous: z.boolean().default(true),
   allowVoteChanges: z.boolean().default(true),
   isMultipleChoice: z.boolean().default(false),
-  endDate: z.string().min(1, "End date is required"),
+  isPublicShareable: z.boolean().default(false),
+  endDate: z.string().optional().refine((val) => val && val.length > 0, "End date is required"),
   options: z.array(pollOptionSchema).min(2, "At least 2 options required"),
 });
 
@@ -57,7 +58,8 @@ export default function CreatePoll() {
       isAnonymous: true,
       allowVoteChanges: true,
       isMultipleChoice: false,
-      endDate: "",
+      isPublicShareable: false,
+      endDate: undefined,
       options: [{text: "", imageUrl: ""}, {text: "", imageUrl: ""}],
     },
   });
@@ -480,6 +482,7 @@ export default function CreatePoll() {
                             type="datetime-local"
                             id="endDate"
                             {...field}
+                            value={field.value || ""}
                             data-testid="input-end-date"
                           />
                         </FormControl>
@@ -542,6 +545,25 @@ export default function CreatePoll() {
                           </FormControl>
                           <FormLabel className="text-sm font-normal">
                             Allow voters to change their vote
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="isPublicShareable"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-public-shareable"
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">
+                            Public Poll (Anyone with link can vote)
                           </FormLabel>
                         </FormItem>
                       )}
