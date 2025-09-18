@@ -48,6 +48,8 @@ export const polls = pgTable("polls", {
   allowVoteChanges: boolean("allow_vote_changes").notNull().default(true),
   isMultipleChoice: boolean("is_multiple_choice").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
+  isPublicShareable: boolean("is_public_shareable").notNull().default(false), // for anonymous voting via shareable links
+  shareableSlug: varchar("shareable_slug", { length: 50 }), // unique identifier for shareable links
   endDate: timestamp("end_date").notNull(),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -69,6 +71,7 @@ export const votes = pgTable("votes", {
   optionId: varchar("option_id").notNull().references(() => pollOptions.id, { onDelete: 'cascade' }),
   voterId: varchar("voter_id").references(() => users.id), // null for anonymous votes
   ipAddress: varchar("ip_address", { length: 45 }), // for tracking without user ID
+  browserFingerprint: varchar("browser_fingerprint"), // for duplicate prevention in anonymous voting
   createdAt: timestamp("created_at").defaultNow(),
 });
 
