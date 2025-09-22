@@ -33,6 +33,9 @@ export function Header() {
         credentials: 'include' 
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Redirect to landing page after successful logout
+      window.location.href = '/landing';
     } catch (error) {
       console.error('Logout failed:', error);
     }

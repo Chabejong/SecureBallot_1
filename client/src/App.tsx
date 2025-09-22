@@ -21,25 +21,8 @@ import NotFound from "@/pages/not-found";
 // Protected route wrapper that handles auth states properly
 function ProtectedRoute({ component: Component, ...props }: { component: React.ComponentType<any> }) {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const [redirectTimer, setRedirectTimer] = useState<number>(0);
   
-  console.log('ProtectedRoute render - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user, 'timer:', redirectTimer);
-  
-  // Start redirect timer
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log('ProtectedRoute timeout - redirecting to login');
-      setRedirectTimer(Date.now());
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // If timer fired, redirect immediately
-  if (redirectTimer > 0) {
-    console.log('ProtectedRoute redirecting due to timeout');
-    return <Redirect to="/auth" />;
-  }
+  console.log('ProtectedRoute render - isLoading:', isLoading, 'isAuthenticated:', isAuthenticated, 'user:', user);
   
   // If we have a user and they're authenticated, show the component
   if (user && isAuthenticated) {
@@ -47,13 +30,13 @@ function ProtectedRoute({ component: Component, ...props }: { component: React.C
     return <Component {...props} />;
   }
   
-  // If user is explicitly null and not loading, redirect to auth
-  if (user === null && !isLoading) {
-    console.log('ProtectedRoute redirecting - user is null and not loading');
+  // If not loading and not authenticated, redirect to auth immediately
+  if (!isLoading && !isAuthenticated) {
+    console.log('ProtectedRoute redirecting - not loading and not authenticated');
     return <Redirect to="/auth" />;
   }
   
-  // Otherwise, show loading
+  // Show loading only while actually loading
   console.log('ProtectedRoute showing loading state');
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -68,6 +51,7 @@ function Router() {
   return (
     <Switch>
       {/* Public routes available to everyone */}
+      <Route path="/landing" component={Landing} />
       <Route path="/vote/:slug" component={PublicVote} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/auth" component={Auth} />

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error, isError } = useQuery({
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -10,15 +10,20 @@ export function useAuth() {
     refetchOnWindowFocus: false,
     refetchOnMount: true, // Allow refetch on mount to pick up auth changes
     refetchOnReconnect: false,
+    refetchInterval: false, // Disable automatic refetching
   });
 
   if (import.meta.env.DEV) {
-    console.log('useAuth hook - isLoading:', isLoading, 'user:', user, 'error:', error);
+    console.log('useAuth hook - isLoading:', isLoading, 'user:', user, 'error:', error, 'isError:', isError);
   }
 
+  // Consider user authenticated only if we have user data
+  // Consider user unauthenticated if we have an explicit error or null user after loading
+  const isAuthenticated = !!user;
+  
   return {
     user: user as User | undefined,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
   };
 }
