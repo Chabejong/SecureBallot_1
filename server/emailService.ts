@@ -2,8 +2,14 @@
 import { MailService } from '@sendgrid/mail';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_VERIFIED_SENDER;
+
 if (!SENDGRID_API_KEY) {
   throw new Error("SENDGRID_API_KEY environment variable must be set");
+}
+
+if (!SENDGRID_FROM_EMAIL) {
+  console.warn("SENDGRID_FROM_EMAIL not set. You need to set this to a verified sender email in your SendGrid account.");
 }
 
 const mailService = new MailService();
@@ -17,7 +23,7 @@ interface EmailParams {
   html?: string;
 }
 
-export async function sendEmail(params: EmailParams): Promise<boolean> {
+export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
   try {
     await mailService.send({
       to: params.to,
@@ -27,10 +33,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
     });
     console.log(`Email sent successfully to ${params.to}`);
-    return true;
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('SendGrid email error:', error);
-    return false;
+    
+    let errorMessage = 'Failed to send email';
+    if (error.code === 401) {
+      errorMessage = 'SendGrid authentication failed. Please check your API key and sender email verification.';
+    } else if (error.code === 403) {
+      errorMessage = 'SendGrid permission denied. Please verify your sender email address in SendGrid.';
+    } else if (error.response?.body?.errors) {
+      errorMessage = error.response.body.errors.map((e: any) => e.message).join(', ');
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -100,11 +116,23 @@ The Ballot Box Team
     </div>
   `;
 
-  return sendEmail({
+  const fromEmail = SENDGRID_FROM_EMAIL || 'noreply@example.com';
+  
+  if (!SENDGRID_FROM_EMAIL) {
+    console.error('SENDGRID_FROM_EMAIL not configured. Password reset email may fail.');
+  }
+
+  const result = await sendEmail({
     to: email,
-    from: 'noreply@ballotbox.app', // Configure your verified sender domain in SendGrid
+    from: fromEmail,
     subject,
     text,
     html,
   });
+  
+  if (!result.success) {
+    console.error(`Failed to send password reset email to: ${email} - ${result.error}`);
+  }
+  
+  return result.success;
 }
