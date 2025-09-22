@@ -95,15 +95,21 @@ The Ballot Box Team
         </p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${resetUrl}" 
-             style="background: linear-gradient(to right, #2563eb, #1d4ed8); 
+             style="background-color: #2563eb; 
                     color: white; 
                     padding: 12px 24px; 
                     text-decoration: none; 
-                    border-radius: 6px; 
-                    font-weight: 500;
+                    border-radius: 4px; 
+                    font-weight: bold;
                     display: inline-block;">
             Reset Password
           </a>
+        </div>
+        <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd;">
+          <p style="margin: 0; color: #555; font-size: 14px; font-weight: bold;">If the button above doesn't work, copy and paste this link into your browser:</p>
+          <p style="margin: 10px 0 0 0; word-break: break-all; color: #2563eb; font-size: 13px;">
+            ${resetUrl}
+          </p>
         </div>
         <p style="color: #6b7280; font-size: 14px;">
           This link will expire in 2 hours for security reasons.
