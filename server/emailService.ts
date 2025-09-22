@@ -118,6 +118,7 @@ The Ballot Box Team
 
   const fromEmail = SENDGRID_FROM_EMAIL || 'noreply@example.com';
   
+  
   if (!SENDGRID_FROM_EMAIL) {
     console.error('SENDGRID_FROM_EMAIL not configured. Password reset email may fail.');
   }

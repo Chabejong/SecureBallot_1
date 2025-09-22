@@ -96,6 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+
   // Password reset routes
   app.post('/api/auth/forgot-password', async (req, res) => {
     try {
