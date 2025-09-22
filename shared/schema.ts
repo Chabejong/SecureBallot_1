@@ -34,6 +34,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  resetToken: varchar("reset_token"),
+  tokenExpiry: timestamp("token_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -155,11 +157,23 @@ export const loginUserSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// Password reset schemas
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = Omit<typeof users.$inferSelect, 'password'>; // Exclude password from public user type
 export type RegisterUser = z.infer<typeof registerUserSchema>;
 export type LoginUser = z.infer<typeof loginUserSchema>;
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;
 export type Poll = typeof polls.$inferSelect;
 export type InsertPoll = z.infer<typeof insertPollSchema>;
 export type PollOption = typeof pollOptions.$inferSelect;

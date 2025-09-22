@@ -330,7 +330,17 @@ export default function Auth() {
             </Form>
           )}
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
+            {mode === "login" && (
+              <div>
+                <Link href="/forgot-password">
+                  <Button variant="link" className="text-sm text-muted-foreground hover:text-primary" data-testid="link-forgot-password">
+                    Forgot your password?
+                  </Button>
+                </Link>
+              </div>
+            )}
+            
             <Button
               type="button"
               variant="link"

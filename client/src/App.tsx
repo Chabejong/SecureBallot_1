@@ -13,6 +13,8 @@ import Vote from "@/pages/Vote";
 import Results from "@/pages/Results";
 import HowItWorks from "@/pages/HowItWorks";
 import Auth from "@/pages/Auth";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import PublicVote from "@/pages/PublicVote";
 import AuthenticatedPoll from "@/pages/AuthenticatedPoll";
 import PollConfirmation from "@/pages/PollConfirmation";
@@ -55,6 +57,8 @@ function Router() {
       <Route path="/vote/:slug" component={PublicVote} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/auth" component={Auth} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       
       {/* Authenticated poll access route */}
       <Route path="/auth/poll/:slug" component={(props) => <ProtectedRoute component={AuthenticatedPoll} {...props} />} />

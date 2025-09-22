@@ -2,9 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerUser } from "./localAuth";
-import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema } from "@shared/schema";
+import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema, forgotPasswordSchema, resetPasswordSchema } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendPasswordResetEmail } from "./emailService";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
@@ -91,6 +94,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ message: "Logout successful" });
       });
     });
+  });
+
+  // Password reset routes
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = forgotPasswordSchema.parse(req.body);
+      
+      // Check if user exists
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // For security, don't reveal if email exists or not
+        return res.json({ 
+          message: 'If an account with that email exists, we have sent a password reset link.' 
+        });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const tokenExpiry = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours from now
+
+      // Store token in database
+      await storage.setResetToken(user.id, resetToken, tokenExpiry);
+
+      // Send reset email
+      const emailSent = await sendPasswordResetEmail(email, resetToken, user.firstName || undefined);
+      
+      if (!emailSent) {
+        console.error('Failed to send password reset email to:', email);
+        return res.status(500).json({ 
+          message: 'Failed to send reset email. Please try again.' 
+        });
+      }
+
+      res.json({ 
+        message: 'If an account with that email exists, we have sent a password reset link.' 
+      });
+    } catch (error: any) {
+      console.error('Forgot password error:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: 'Invalid email address', 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, password } = resetPasswordSchema.parse(req.body);
+      
+      // Find user by reset token
+      const user = await storage.getUserByResetToken(token);
+      if (!user || !user.tokenExpiry || new Date() > user.tokenExpiry) {
+        return res.status(400).json({ 
+          message: 'Invalid or expired reset token' 
+        });
+      }
+
+      // Hash new password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // Update password and clear reset token
+      await storage.resetPassword(user.id, hashedPassword);
+
+      res.json({ message: 'Password reset successfully' });
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: 'Invalid input data', 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

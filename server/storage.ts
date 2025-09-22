@@ -25,6 +25,11 @@ export interface IStorage {
   createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
+  // Password reset operations
+  setResetToken(userId: string, token: string, expiry: Date): Promise<void>;
+  getUserByResetToken(token: string): Promise<typeof users.$inferSelect | undefined>;
+  resetPassword(userId: string, hashedPassword: string): Promise<void>;
+  
   // Poll operations
   createPoll(poll: InsertPoll, options: Array<{text: string; imageUrl?: string}>): Promise<Poll>;
   getPoll(id: string): Promise<PollWithDetails | undefined>;
@@ -88,6 +93,33 @@ export class DatabaseStorage implements IStorage {
       .returning();
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  // Password reset operations
+  async setResetToken(userId: string, token: string, expiry: Date): Promise<void> {
+    await db.update(users)
+      .set({ 
+        resetToken: token, 
+        tokenExpiry: expiry 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByResetToken(token: string): Promise<typeof users.$inferSelect | undefined> {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.resetToken, token));
+    return user;
+  }
+
+  async resetPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db.update(users)
+      .set({ 
+        password: hashedPassword,
+        resetToken: null,
+        tokenExpiry: null
+      })
+      .where(eq(users.id, userId));
   }
 
   // Poll operations
