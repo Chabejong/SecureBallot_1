@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,15 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  // Check URL parameters to determine initial mode
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const modeParam = urlParams.get('mode');
+    if (modeParam === 'register') {
+      setMode('register');
+    }
+  }, []);
 
   const registerForm = useForm<RegisterUser>({
     resolver: zodResolver(registerUserSchema),

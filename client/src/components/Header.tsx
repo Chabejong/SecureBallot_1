@@ -158,7 +158,7 @@ export function Header() {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/auth">
+                <Link href="/auth?mode=register">
                   <Button size="sm" data-testid="button-sign-up">
                     <UserPlus className="w-4 h-4 mr-2" />
                     Sign Up
@@ -274,7 +274,7 @@ export function Header() {
                       </SheetClose>
                       
                       <SheetClose asChild>
-                        <Link href="/auth">
+                        <Link href="/auth?mode=register">
                           <Button 
                             variant="outline"
                             className="w-full h-12"
