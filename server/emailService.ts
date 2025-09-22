@@ -59,6 +59,7 @@ export async function sendPasswordResetEmail(
   const protocol = process.env.NODE_ENV === 'production' ? 'https://' : 'http://';
   const resetUrl = `${protocol}${domain}/reset-password?token=${resetToken}`;
   
+  
   const subject = 'Reset Your Password - The Ballot Box';
   
   const text = `
@@ -123,6 +124,7 @@ The Ballot Box Team
     console.error('SENDGRID_FROM_EMAIL not configured. Password reset email may fail.');
   }
 
+  
   const result = await sendEmail({
     to: email,
     from: fromEmail,
