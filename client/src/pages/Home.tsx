@@ -40,7 +40,7 @@ export default function Home() {
               </p>
             </div>
             <Link href="/create" className="flex-shrink-0">
-              <Button size="lg" className="w-full sm:w-auto" data-testid="button-create-poll">
+              <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-poll">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Poll
               </Button>
@@ -135,7 +135,7 @@ export default function Home() {
                   There are no active polls at the moment. Why not create one?
                 </p>
                 <Link href="/create">
-                  <Button data-testid="button-create-first-poll">
+                  <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-first-poll">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Your First Poll
                   </Button>

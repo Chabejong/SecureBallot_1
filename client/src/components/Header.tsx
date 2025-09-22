@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus } from "lucide-react";
+import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
@@ -66,25 +66,28 @@ export function Header() {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-2">
             {isAuthenticated && (
               <>
                 <Link href="/">
-                  <span className="text-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-polls">
+                  <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-polls">
+                    <BarChart3 className="w-4 h-4 mr-2" />
                     Polls
-                  </span>
+                  </Button>
                 </Link>
                 <Link href="/create">
-                  <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-create">
+                  <Button className="px-4 py-2 h-10 font-medium bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="link-create">
+                    <Sparkles className="w-4 h-4 mr-2" />
                     Create
-                  </span>
+                  </Button>
                 </Link>
               </>
             )}
             <Link href="/how-it-works">
-              <span className="text-muted-foreground hover:text-primary font-medium transition-colors cursor-pointer" data-testid="link-how-it-works">
+              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-how-it-works">
+                <CheckCircle className="w-4 h-4 mr-2" />
                 How it Works
-              </span>
+              </Button>
             </Link>
           </nav>
 
@@ -98,7 +101,7 @@ export function Header() {
             {isAuthenticated ? (
               <div className="flex items-center space-x-2">
                 <Link href="/create">
-                  <Button variant="outline" size="sm" className="hidden sm:flex" data-testid="button-create-poll">
+                  <Button size="sm" className="hidden lg:flex bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-poll">
                     <Plus className="w-4 h-4 mr-1" />
                     Create Poll
                   </Button>
@@ -214,8 +217,8 @@ export function Header() {
                       {/* Navigation Links */}
                       <SheetClose asChild>
                         <Link href="/">
-                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-polls">
-                            <User className="w-4 h-4 mr-3" />
+                          <Button variant="ghost" className="w-full justify-start h-12 text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-polls">
+                            <BarChart3 className="w-4 h-4 mr-3" />
                             My Polls
                           </Button>
                         </Link>
@@ -223,8 +226,8 @@ export function Header() {
                       
                       <SheetClose asChild>
                         <Link href="/create">
-                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-create">
-                            <Plus className="w-4 h-4 mr-3" />
+                          <Button className="w-full justify-start h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md transition-all duration-200" data-testid="link-mobile-create">
+                            <Sparkles className="w-4 h-4 mr-3" />
                             Create Poll
                           </Button>
                         </Link>
@@ -232,7 +235,7 @@ export function Header() {
                       
                       <SheetClose asChild>
                         <Link href="/how-it-works">
-                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-how-it-works">
+                          <Button variant="ghost" className="w-full justify-start h-12 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-how-it-works">
                             <CheckCircle className="w-4 h-4 mr-3" />
                             How it Works
                           </Button>
