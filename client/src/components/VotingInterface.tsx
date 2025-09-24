@@ -28,10 +28,9 @@ export function VotingInterface({
       <CardContent className="p-8">
         {/* Poll Information */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Cast Your Vote</h1>
-          <h2 className="text-xl font-semibold text-foreground mb-4" data-testid="text-voting-poll-title">
+          <h1 className="text-2xl font-bold text-foreground mb-4" data-testid="text-voting-poll-title">
             {poll.title}
-          </h2>
+          </h1>
           <p className="text-muted-foreground mb-4">
             Choose your preferred option. Your vote is anonymous and encrypted.
           </p>
