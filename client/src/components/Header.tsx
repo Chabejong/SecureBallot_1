@@ -62,7 +62,7 @@ export function Header() {
                 <CheckCircle className="w-4 h-4 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold text-foreground">
-                <span className="hidden sm:inline">The </span>Ballot Box
+                The Ballot Box
               </span>
             </div>
           </Link>

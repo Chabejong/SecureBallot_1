@@ -27,17 +27,12 @@ export function VotingInterface({
   return (
     <Card className="shadow-lg">
       <CardContent className="p-8">
-        {/* Security Indicator */}
-        <div className="flex items-center justify-center mb-8">
-          <Badge className="bg-gradient-to-r from-secondary to-primary text-white px-4 py-2">
-            <Shield className="w-4 h-4 mr-2" />
-            Secure Voting Session
-          </Badge>
-        </div>
-
         {/* Poll Information */}
         <div className="text-center mb-8">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Cast Your Vote</h2>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Cast Your Vote</h1>
+          <h2 className="text-xl font-semibold text-foreground mb-4" data-testid="text-voting-poll-title">
+            {poll.title}
+          </h2>
           <p className="text-muted-foreground mb-4">
             Choose your preferred option. Your vote is anonymous and encrypted.
           </p>
