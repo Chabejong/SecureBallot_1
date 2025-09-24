@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles } from "lucide-react";
+import cn3mLogo from "@/assets/cn3m-logo.png";
 import { queryClient } from "@/lib/queryClient";
 import {
   DropdownMenu,
@@ -56,14 +57,14 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/">
-            <div className="flex items-center space-x-2 cursor-pointer" data-testid="link-home">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                The Ballot Box
-              </span>
+          <Link href="/" aria-label="Home - CN³M">
+            <div className="flex items-center cursor-pointer" data-testid="link-home">
+              <img 
+                src={cn3mLogo} 
+                alt="CN³M logo" 
+                className="h-8 w-auto" 
+                data-testid="img-logo-cn3m"
+              />
             </div>
           </Link>
 
