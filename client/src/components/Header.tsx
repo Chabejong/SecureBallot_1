@@ -57,14 +57,17 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" aria-label="Home - CN³M">
-            <div className="flex items-center cursor-pointer" data-testid="link-home">
+          <Link href="/" aria-label="Home - CN³M The Ballot Box">
+            <div className="flex items-center space-x-3 cursor-pointer" data-testid="link-home">
               <img 
                 src={cn3mLogo} 
                 alt="CN³M logo" 
-                className="h-8 w-auto" 
+                className="h-12 w-auto" 
                 data-testid="img-logo-cn3m"
               />
+              <span className="text-xl font-bold text-foreground">
+                The Ballot Box
+              </span>
             </div>
           </Link>
 
