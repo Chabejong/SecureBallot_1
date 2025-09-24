@@ -320,49 +320,27 @@ export default function Results() {
           </Card>
         )}
 
-        {/* Audit Trail */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Security & Transparency
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 p-4 bg-secondary/10 rounded-lg">
-                <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-secondary" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">Cryptographic Verification</h4>
-                  <p className="text-muted-foreground text-sm">All votes have been cryptographically verified and results are tamper-proof</p>
-                </div>
-                <span className="text-muted-foreground text-sm">Verified</span>
+        {/* Security & Transparency */}
+        <Card className="shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-secondary" />
+                <span className="text-sm font-medium">Security & Transparency</span>
               </div>
-              
-              <div className="flex items-center space-x-4 p-4 bg-primary/10 rounded-lg">
-                <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-primary" />
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-secondary" />
+                  <span>Verified</span>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">Privacy Protection</h4>
-                  <p className="text-muted-foreground text-sm">
-                    {pollResults.isAnonymous ? "Anonymous voting enabled - individual votes cannot be traced" : "Non-anonymous voting - voters can be identified"}
-                  </p>
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-primary" />
+                  <span>{pollResults.isAnonymous ? "Anonymous" : "Verified"}</span>
                 </div>
-                <span className="text-muted-foreground text-sm">Active</span>
-              </div>
-              
-              <div className="flex items-center space-x-4 p-4 bg-accent/10 rounded-lg">
-                <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                  <BarChart3 className="w-5 h-5 text-accent" />
+                <div className="flex items-center gap-1">
+                  <BarChart3 className="w-3 h-3 text-accent" />
+                  <span>Live</span>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">Real-time Updates</h4>
-                  <p className="text-muted-foreground text-sm">Results are updated in real-time as votes are submitted and verified</p>
-                </div>
-                <span className="text-muted-foreground text-sm">Live</span>
               </div>
             </div>
           </CardContent>

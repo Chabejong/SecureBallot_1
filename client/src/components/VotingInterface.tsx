@@ -37,11 +37,9 @@ export function VotingInterface({
 
         {/* Poll Information */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-foreground mb-2" data-testid="text-voting-poll-title">
-            {poll.title}
-          </h1>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Cast Your Vote</h2>
           <p className="text-muted-foreground mb-4">
-            {poll.description || "Choose your preferred option. Your vote is anonymous and encrypted."}
+            Choose your preferred option. Your vote is anonymous and encrypted.
           </p>
           {hasVoted && poll.allowVoteChanges && (
             <div className="bg-secondary/10 border border-secondary/20 rounded-lg p-3 mb-4">
