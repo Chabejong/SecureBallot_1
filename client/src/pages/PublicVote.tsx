@@ -246,26 +246,18 @@ export default function PublicVote() {
           <CardContent>
             {/* Show voting interface if not ended and haven't voted */}
             {!hasEnded && !hasVoted && !showResults && (
-              <div>
-                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    🔒 <strong>Anonymous Voting:</strong> No login required. Your vote is completely anonymous 
-                    and secure. Each device can vote once.
-                  </p>
-                </div>
-                <VotingInterface
-                  poll={poll}
-                  selectedOptionId={selectedOptionId}
-                  onOptionSelect={handleOptionSelect}
-                  onVote={() => {
-                    const optionIds = Array.isArray(selectedOptionId) ? selectedOptionId : [selectedOptionId];
-                    submitVoteMutation.mutate(optionIds.filter(Boolean));
-                  }}
-                  isSubmitting={submitVoteMutation.isPending}
-                  hasVoted={false}
-                  data-testid="voting-interface"
-                />
-              </div>
+              <VotingInterface
+                poll={poll}
+                selectedOptionId={selectedOptionId}
+                onOptionSelect={handleOptionSelect}
+                onVote={() => {
+                  const optionIds = Array.isArray(selectedOptionId) ? selectedOptionId : [selectedOptionId];
+                  submitVoteMutation.mutate(optionIds.filter(Boolean));
+                }}
+                isSubmitting={submitVoteMutation.isPending}
+                hasVoted={false}
+                data-testid="voting-interface"
+              />
             )}
 
             {/* Show results */}
