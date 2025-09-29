@@ -78,9 +78,18 @@ class PayPalSDKManager {
         .then((res) => res.json())
         .then((data) => data.clientToken);
       
+      // Configure SDK to prioritize PayPal account login and minimize guest options
       this.sdkInstance = await (window as any).paypal.createInstance({
         clientToken,
         components: ["paypal-payments"],
+        // Enforce minimal guest checkout options and prioritize PayPal account
+        config: {
+          preferredLoginType: "PAYPAL", // Encourage PayPal login
+          landingPage: "LOGIN", // Direct to login page instead of signup
+          userAction: "PAY_NOW", // Streamline payment flow
+          // Restrict funding sources to PayPal only
+          disableFunding: ["card", "credit", "paylater", "venmo", "bancontact", "blik", "eps", "giropay", "ideal", "mercadopago", "mybank", "p24", "sepa", "sofort", "trustly"]
+        }
       });
       
       this.isLoaded = true;
@@ -212,11 +221,20 @@ export default function PricingPayPalButton({
         onApprove,
         onCancel,
         onError,
+        // Additional session configuration to prioritize PayPal account
+        style: {
+          layout: "vertical", // Vertical layout emphasizes PayPal button
+          fundingicons: false, // Hide funding source icons to reduce confusion
+          tagline: false // Remove PayPal tagline for cleaner appearance
+        }
       });
 
       const checkoutOptionsPromise = createOrder();
       await paypalCheckout.start(
-        { paymentFlow: "auto" },
+        { 
+          paymentFlow: "checkout", // Use explicit checkout flow (not auto)
+          loginType: "PAYPAL" // Encourage PayPal login specifically
+        },
         checkoutOptionsPromise,
       );
     } catch (e) {
