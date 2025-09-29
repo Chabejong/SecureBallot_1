@@ -18,6 +18,8 @@ import ResetPassword from "@/pages/ResetPassword";
 import PublicVote from "@/pages/PublicVote";
 import AuthenticatedPoll from "@/pages/AuthenticatedPoll";
 import PollConfirmation from "@/pages/PollConfirmation";
+import Pricing from "@/pages/Pricing";
+import Donate from "@/pages/Donate";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper that handles auth states properly
@@ -56,6 +58,8 @@ function Router() {
       <Route path="/landing" component={Landing} />
       <Route path="/vote/:slug" component={PublicVote} />
       <Route path="/how-it-works" component={HowItWorks} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/donate" component={Donate} />
       <Route path="/auth" component={Auth} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />

@@ -95,6 +95,16 @@ export function Header() {
                 How it Works
               </Button>
             </Link>
+            <Link href="/pricing">
+              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-pricing">
+                Pricing
+              </Button>
+            </Link>
+            <Link href="/donate">
+              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-donate">
+                Donate
+              </Button>
+            </Link>
           </nav>
 
           {/* Auth Actions */}
@@ -248,6 +258,22 @@ export function Header() {
                         </Link>
                       </SheetClose>
                       
+                      <SheetClose asChild>
+                        <Link href="/pricing">
+                          <Button variant="ghost" className="w-full justify-start h-12 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-pricing">
+                            Pricing
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
+                      <SheetClose asChild>
+                        <Link href="/donate">
+                          <Button variant="ghost" className="w-full justify-start h-12 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-donate">
+                            Donate
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
                       <div className="pt-4 mt-4 border-t">
                         <Button 
                           variant="ghost" 
@@ -267,6 +293,22 @@ export function Header() {
                           <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-how-it-works-guest">
                             <CheckCircle className="w-4 h-4 mr-3" />
                             How it Works
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
+                      <SheetClose asChild>
+                        <Link href="/pricing">
+                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-pricing-guest">
+                            Pricing
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      
+                      <SheetClose asChild>
+                        <Link href="/donate">
+                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-donate-guest">
+                            Donate
                           </Button>
                         </Link>
                       </SheetClose>
