@@ -23,12 +23,14 @@ interface PayPalButtonProps {
   amount: string;
   currency: string;
   intent: string;
+  className?: string;
 }
 
 export default function PayPalButton({
   amount,
   currency,
   intent,
+  className = "",
 }: PayPalButtonProps) {
   const createOrder = async () => {
     const orderPayload = {
@@ -139,6 +141,6 @@ export default function PayPalButton({
     }
   };
 
-  return <paypal-button id="paypal-button"></paypal-button>;
+  return <paypal-button id="paypal-button" className={className}></paypal-button>;
 }
 // <END_EXACT_CODE>
