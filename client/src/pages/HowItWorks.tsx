@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2 } from "lucide-react";
+import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2, Crown, CreditCard } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -134,12 +134,124 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 3: Sharing Your Poll */}
+          {/* Section 3: Pricing and Subscription Plans */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Crown className="w-6 h-6 text-primary" />
+                3. Pricing and Subscription Plans
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Choose the plan that fits your polling needs. Start free and upgrade as your audience grows.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <Badge variant="outline" className="bg-muted text-muted-foreground">
+                    Free
+                  </Badge>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground mb-2">Free Tier</p>
+                    <p className="text-muted-foreground">
+                      Perfect for trying out our service. Create <strong>1 poll per month</strong> with basic features and unlimited voting.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €5.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Basic Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 50 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €10.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Standard Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 100 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €25.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Premium Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 250 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €50.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Professional Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 500 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €75.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Enterprise Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 750 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 p-4 border border-primary/30 rounded-lg bg-primary/5">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                      €100.00
+                    </Badge>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground mb-1">Ultimate Plan</p>
+                      <p className="text-sm text-muted-foreground">Up to 1000 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited polls</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary mb-2">How Upgrades Work:</p>
+                    <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Visit the Pricing page to view all available plans</li>
+                      <li>Choose the plan that matches your expected participant count</li>
+                      <li>Complete secure payment via PayPal</li>
+                      <li>Instantly unlock unlimited poll creation and higher participant limits</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 4: Sharing Your Poll */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Share2 className="w-6 h-6 text-primary" />
-                3. Sharing Your Poll
+                4. Sharing Your Poll
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -190,12 +302,12 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 4: Special Features */}
+          {/* Section 5: Special Features */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Camera className="w-6 h-6 text-primary" />
-                4. Special Features
+                5. Special Features
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -247,12 +359,12 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 5: Accessibility */}
+          {/* Section 6: Accessibility */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Smartphone className="w-6 h-6 text-primary" />
-                5. Accessibility
+                6. Accessibility
               </CardTitle>
             </CardHeader>
             <CardContent>
