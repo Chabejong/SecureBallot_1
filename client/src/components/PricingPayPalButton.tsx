@@ -4,14 +4,98 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "paypal-button": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
+// Global PayPal SDK management to prevent multiple loads
+class PayPalSDKManager {
+  private static instance: PayPalSDKManager;
+  private isLoading = false;
+  private isLoaded = false;
+  private sdkInstance: any = null;
+  private loadPromise: Promise<void> | null = null;
+
+  static getInstance(): PayPalSDKManager {
+    if (!PayPalSDKManager.instance) {
+      PayPalSDKManager.instance = new PayPalSDKManager();
     }
+    return PayPalSDKManager.instance;
+  }
+
+  async loadSDK(): Promise<void> {
+    // If already loaded, return immediately
+    if (this.isLoaded && (window as any).paypal && this.sdkInstance) {
+      return Promise.resolve();
+    }
+
+    // If currently loading, return the existing promise
+    if (this.isLoading && this.loadPromise) {
+      return this.loadPromise;
+    }
+
+    // Start loading
+    this.isLoading = true;
+    this.loadPromise = this.doLoadSDK();
+    
+    try {
+      await this.loadPromise;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private async doLoadSDK(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Check if PayPal is already available
+        if ((window as any).paypal) {
+          this.initializeSDK().then(resolve).catch(reject);
+          return;
+        }
+
+        // Load PayPal script
+        const script = document.createElement("script");
+        script.src = import.meta.env.PROD
+          ? "https://www.paypal.com/web-sdk/v6/core"
+          : "https://www.sandbox.paypal.com/web-sdk/v6/core";
+        script.async = true;
+        
+        script.onload = () => {
+          this.initializeSDK().then(resolve).catch(reject);
+        };
+        
+        script.onerror = () => {
+          reject(new Error("Failed to load PayPal SDK"));
+        };
+        
+        document.body.appendChild(script);
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async initializeSDK(): Promise<void> {
+    try {
+      const clientToken: string = await fetch("/paypal/setup")
+        .then((res) => res.json())
+        .then((data) => data.clientToken);
+      
+      this.sdkInstance = await (window as any).paypal.createInstance({
+        clientToken,
+        components: ["paypal-payments"],
+      });
+      
+      this.isLoaded = true;
+    } catch (error) {
+      console.error("Failed to initialize PayPal SDK:", error);
+      throw error;
+    }
+  }
+
+  getSDKInstance() {
+    return this.sdkInstance;
+  }
+
+  isSDKReady(): boolean {
+    return this.isLoaded && this.sdkInstance !== null;
   }
 }
 
@@ -29,6 +113,7 @@ export default function PricingPayPalButton({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPayPalReady, setIsPayPalReady] = useState(false);
   const { toast } = useToast();
+  const sdkManager = PayPalSDKManager.getInstance();
 
   const createOrder = async () => {
     const orderPayload = {
@@ -111,104 +196,71 @@ export default function PricingPayPalButton({
     });
   };
 
-  useEffect(() => {
-    const loadPayPalSDK = async () => {
-      try {
-        if (!(window as any).paypal) {
-          const script = document.createElement("script");
-          script.src = import.meta.env.PROD
-            ? "https://www.paypal.com/web-sdk/v6/core"
-            : "https://www.sandbox.paypal.com/web-sdk/v6/core";
-          script.async = true;
-          script.onload = () => initPayPal();
-          document.body.appendChild(script);
-        } else {
-          await initPayPal();
-        }
-      } catch (e) {
-        console.error("Failed to load PayPal SDK", e);
-      }
-    };
-
-    loadPayPalSDK();
-  }, []);
-
-  const initPayPal = async () => {
+  const handleButtonClick = async () => {
+    if (isProcessing) return;
+    
     try {
-      const clientToken: string = await fetch("/paypal/setup")
-        .then((res) => res.json())
-        .then((data) => {
-          return data.clientToken;
-        });
+      setIsProcessing(true);
       
-      const sdkInstance = await (window as any).paypal.createInstance({
-        clientToken,
-        components: ["paypal-payments"],
-      });
+      // Ensure SDK is ready
+      if (!sdkManager.isSDKReady()) {
+        throw new Error("PayPal SDK not ready");
+      }
 
+      const sdkInstance = sdkManager.getSDKInstance();
       const paypalCheckout = sdkInstance.createPayPalOneTimePaymentSession({
         onApprove,
         onCancel,
         onError,
       });
 
-      const onClick = async () => {
-        if (isProcessing) return;
-        
-        try {
-          setIsProcessing(true);
-          const checkoutOptionsPromise = createOrder();
-          await paypalCheckout.start(
-            { paymentFlow: "auto" },
-            checkoutOptionsPromise,
-          );
-        } catch (e) {
-          console.error(e);
-          toast({
-            title: "Error",
-            description: "Failed to start payment process. Please try again.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsProcessing(false);
-        }
-      };
-
-      const paypalButton = document.getElementById(`paypal-button-${tier}`);
-      if (paypalButton) {
-        paypalButton.addEventListener("click", onClick);
-        setIsPayPalReady(true);
-      }
-
-      return () => {
-        if (paypalButton) {
-          paypalButton.removeEventListener("click", onClick);
-        }
-      };
+      const checkoutOptionsPromise = createOrder();
+      await paypalCheckout.start(
+        { paymentFlow: "auto" },
+        checkoutOptionsPromise,
+      );
     } catch (e) {
-      console.error(e);
+      console.error("Payment initiation error:", e);
+      toast({
+        title: "Error",
+        description: "Failed to start payment process. Please try again.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
     }
   };
 
-  if (!isPayPalReady) {
-    return (
-      <Button 
-        disabled
-        className={`w-full ${className}`}
-        data-testid={`button-purchase-${tier.toLowerCase()}`}
-      >
-        Loading PayPal...
-      </Button>
-    );
-  }
+  useEffect(() => {
+    const initializePayPal = async () => {
+      try {
+        await sdkManager.loadSDK();
+        setIsPayPalReady(true);
+      } catch (error) {
+        console.error("Failed to load PayPal SDK:", error);
+        toast({
+          title: "PayPal Error",
+          description: "Failed to load PayPal. Please refresh the page.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    initializePayPal();
+  }, []);
 
   return (
-    <paypal-button 
-      id={`paypal-button-${tier}`} 
-      className={`w-full inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 ${isProcessing ? 'opacity-50 pointer-events-none' : ''} ${className}`}
+    <Button 
+      onClick={handleButtonClick}
+      disabled={!isPayPalReady || isProcessing}
+      className={`w-full ${className}`}
       data-testid={`button-purchase-${tier.toLowerCase()}`}
     >
-      {isProcessing ? "Processing..." : `Upgrade to ${tier.charAt(0).toUpperCase() + tier.slice(1)} - €${amount}`}
-    </paypal-button>
+      {!isPayPalReady 
+        ? "Loading PayPal..." 
+        : isProcessing 
+          ? "Processing..." 
+          : `Upgrade to ${tier.charAt(0).toUpperCase() + tier.slice(1)} - €${amount}`
+      }
+    </Button>
   );
 }
