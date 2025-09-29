@@ -205,7 +205,8 @@ export default function Pricing() {
                     <PayPalButton
                       amount={tier.amount}
                       currency="EUR"
-                      intent="subscription"
+                      intent="capture"
+                      className="w-full"
                     />
                   </div>
                 )}

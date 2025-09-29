@@ -265,6 +265,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User authentication invalid" });
       }
       
+      // Check subscription limits before creating poll
+      const limitCheck = await storage.canCreatePoll(userId);
+      if (!limitCheck.canCreate) {
+        const upgradeMessage = limitCheck.currentTier === "free" 
+          ? "You've reached your free tier limit of 1 poll per month. Upgrade to a premium plan for unlimited polls."
+          : "Your subscription has expired. Please renew to continue creating polls.";
+        
+        return res.status(403).json({ 
+          message: upgradeMessage,
+          currentTier: limitCheck.currentTier,
+          pollCount: limitCheck.pollCount,
+          limit: limitCheck.limit,
+          needsUpgrade: true
+        });
+      }
+      
       const { options, ...pollData } = validatedData;
       
       // Generate unique shareable slug for all poll types
@@ -801,6 +817,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/paypal/order/:orderID/capture", async (req, res) => {
     await capturePaypalOrder(req, res);
+  });
+
+  // Subscription limit check endpoint
+  app.get('/api/user/poll-limits', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const limitCheck = await storage.canCreatePoll(userId);
+      res.json(limitCheck);
+    } catch (error) {
+      console.error("Error checking poll limits:", error);
+      res.status(500).json({ message: "Failed to check poll limits" });
+    }
+  });
+
+  // Update subscription after successful payment
+  app.post('/api/subscription/update', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { tier, paypalOrderId } = req.body;
+      
+      if (!tier || !paypalOrderId) {
+        return res.status(400).json({ message: "Tier and PayPal order ID are required" });
+      }
+
+      // Validate tier
+      const validTiers = ['basic', 'standard', 'pro', 'premium', 'enterprise'];
+      if (!validTiers.includes(tier)) {
+        return res.status(400).json({ message: "Invalid subscription tier" });
+      }
+
+      // Calculate subscription dates (1 month from now)
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await storage.updateUserSubscription(userId, tier, startDate, endDate);
+      
+      res.json({ 
+        message: "Subscription updated successfully",
+        tier,
+        startDate,
+        endDate
+      });
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
   });
 
   // Get poll results by slug for authenticated users

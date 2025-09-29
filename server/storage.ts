@@ -51,6 +51,11 @@ export interface IStorage {
   
   // Cleanup operations
   deleteExpiredPolls(cutoff: Date): Promise<{ pollsDeleted: number; votesDeleted: number; }>;
+  
+  // Subscription operations
+  getUserPollCount(userId: string, month?: Date): Promise<number>;
+  canCreatePoll(userId: string): Promise<{ canCreate: boolean; currentTier: string; pollCount: number; limit: number | null; }>;
+  updateUserSubscription(userId: string, tier: string, startDate: Date, endDate: Date): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -417,6 +422,84 @@ export class DatabaseStorage implements IStorage {
         votesDeleted: Number(votesDeleted)
       };
     });
+  }
+
+  // Subscription operations
+  async getUserPollCount(userId: string, month?: Date): Promise<number> {
+    const startOfMonth = month ? new Date(month.getFullYear(), month.getMonth(), 1) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endOfMonth = month ? new Date(month.getFullYear(), month.getMonth() + 1, 0, 23, 59, 59) : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    
+    const result = await db
+      .select({ count: count() })
+      .from(polls)
+      .where(
+        and(
+          eq(polls.createdById, userId),
+          sql`${polls.createdAt} >= ${startOfMonth}`,
+          sql`${polls.createdAt} <= ${endOfMonth}`
+        )
+      );
+    
+    return result[0]?.count || 0;
+  }
+
+  async canCreatePoll(userId: string): Promise<{ canCreate: boolean; currentTier: string; pollCount: number; limit: number | null; }> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    
+    if (!user) {
+      return { canCreate: false, currentTier: "free", pollCount: 0, limit: 1 };
+    }
+
+    const currentPollCount = await this.getUserPollCount(userId);
+    const tier = user.subscriptionTier || "free";
+    
+    // Check if subscription is active (for paid tiers)
+    const now = new Date();
+    const isSubscriptionActive = !user.subscriptionEndDate || user.subscriptionEndDate > now;
+    
+    // Define tier limits
+    const tierLimits: Record<string, number | null> = {
+      free: 1, // 1 poll per month
+      basic: null, // unlimited
+      standard: null, // unlimited  
+      pro: null, // unlimited
+      premium: null, // unlimited
+      enterprise: null, // unlimited
+    };
+
+    const limit = tierLimits[tier] ?? 1;
+    
+    // If it's a paid tier but subscription is expired, treat as free tier
+    if (tier !== "free" && !isSubscriptionActive) {
+      return { 
+        canCreate: currentPollCount < 1, 
+        currentTier: "free", 
+        pollCount: currentPollCount, 
+        limit: 1 
+      };
+    }
+    
+    // For free tier or active paid subscriptions
+    const canCreate = limit === null || currentPollCount < limit;
+    
+    return { 
+      canCreate, 
+      currentTier: tier, 
+      pollCount: currentPollCount, 
+      limit 
+    };
+  }
+
+  async updateUserSubscription(userId: string, tier: string, startDate: Date, endDate: Date): Promise<void> {
+    await db.update(users)
+      .set({
+        subscriptionTier: tier,
+        subscriptionStartDate: startDate,
+        subscriptionEndDate: endDate,
+        pollsThisMonth: 0, // Reset poll count when upgrading
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
   }
 }
 
