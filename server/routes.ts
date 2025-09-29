@@ -8,6 +8,7 @@ import passport from "passport";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "./emailService";
+import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
@@ -786,6 +787,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error submitting vote by slug:", error);
       res.status(500).json({ message: "Failed to submit vote" });
     }
+  });
+
+  // PayPal routes
+  app.get("/paypal/setup", async (req, res) => {
+    await loadPaypalDefault(req, res);
+  });
+
+  app.post("/paypal/order", async (req, res) => {
+    // Request body should contain: { intent, amount, currency }
+    await createPaypalOrder(req, res);
+  });
+
+  app.post("/paypal/order/:orderID/capture", async (req, res) => {
+    await capturePaypalOrder(req, res);
   });
 
   // Get poll results by slug for authenticated users
