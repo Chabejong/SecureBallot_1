@@ -267,21 +267,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User authentication invalid" });
       }
       
-      // Check subscription limits before creating poll
-      const limitCheck = await storage.canCreatePoll(userId);
-      if (!limitCheck.canCreate) {
-        const upgradeMessage = limitCheck.currentTier === "free" 
-          ? "You've reached your free tier limit of 1 poll per month. Upgrade to a premium plan for unlimited polls."
-          : "Your subscription has expired. Please renew to continue creating polls.";
-        
-        return res.status(403).json({ 
-          message: upgradeMessage,
-          currentTier: limitCheck.currentTier,
-          pollCount: limitCheck.pollCount,
-          limit: limitCheck.limit,
-          needsUpgrade: true
-        });
-      }
+      // Subscription limits temporarily suspended - allow all users to create polls
+      // const limitCheck = await storage.canCreatePoll(userId);
+      // if (!limitCheck.canCreate) {
+      //   const upgradeMessage = limitCheck.currentTier === "free" 
+      //     ? "You've reached your free tier limit of 1 poll per month. Upgrade to a premium plan for unlimited polls."
+      //     : "Your subscription has expired. Please renew to continue creating polls.";
+      //   
+      //   return res.status(403).json({ 
+      //     message: upgradeMessage,
+      //     currentTier: limitCheck.currentTier,
+      //     pollCount: limitCheck.pollCount,
+      //     limit: limitCheck.limit,
+      //     needsUpgrade: true
+      //   });
+      // }
       
       const { options, ...pollData } = validatedData;
       
