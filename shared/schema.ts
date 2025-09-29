@@ -44,6 +44,24 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Payment transactions audit table for security and idempotency
+export const paymentTransactions = pgTable("payment_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  paypalOrderId: varchar("paypal_order_id").notNull().unique(), // Prevent replay attacks
+  amount: varchar("amount").notNull(), // Store as string to match PayPal format
+  currency: varchar("currency").notNull().default("EUR"),
+  tier: varchar("tier").notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, completed, failed
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  // Index for user transaction history
+  userIdIndex: index("payment_transactions_user_id_idx").on(table.userId),
+  // Index for order lookup
+  paypalOrderIndex: index("payment_transactions_paypal_order_idx").on(table.paypalOrderId),
+}));
+
 export const polls = pgTable("polls", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title", { length: 255 }).notNull(),
@@ -61,7 +79,16 @@ export const polls = pgTable("polls", {
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  // Index for getUserPolls queries
+  createdByIndex: index("polls_created_by_idx").on(table.createdById),
+  // Index for cleanup operations and date filtering
+  endDateIndex: index("polls_end_date_idx").on(table.endDate),
+  // Index for active polls queries
+  isActiveIndex: index("polls_is_active_idx").on(table.isActive),
+  // Composite index for user polls with date ordering
+  createdByDateIndex: index("polls_created_by_date_idx").on(table.createdById, table.createdAt),
+}));
 
 export const pollOptions = pgTable("poll_options", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -70,7 +97,12 @@ export const pollOptions = pgTable("poll_options", {
   imageUrl: text("image_url"),
   order: integer("order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  // Index for loading poll options
+  pollIdIndex: index("poll_options_poll_id_idx").on(table.pollId),
+  // Composite index for ordered poll options
+  pollIdOrderIndex: index("poll_options_poll_id_order_idx").on(table.pollId, table.order),
+}));
 
 export const votes = pgTable("votes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -85,12 +117,19 @@ export const votes = pgTable("votes", {
   userPollUnique: uniqueIndex("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
   // Unique constraint for anonymous users - one vote per device per poll  
   anonymousDeviceUnique: uniqueIndex("votes_anonymous_device_unique").on(table.pollId, table.ipAddress, table.browserFingerprint).where(sql`voter_id IS NULL`),
+  // Performance indexes
+  pollIdIndex: index("votes_poll_id_idx").on(table.pollId),
+  voterIdIndex: index("votes_voter_id_idx").on(table.voterId),
+  optionIdIndex: index("votes_option_id_idx").on(table.optionId),
+  // Composite index for vote aggregation
+  pollOptionIndex: index("votes_poll_option_idx").on(table.pollId, table.optionId),
 }));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   polls: many(polls),
   votes: many(votes),
+  paymentTransactions: many(paymentTransactions),
 }));
 
 export const pollsRelations = relations(polls, ({ one, many }) => ({
@@ -125,6 +164,13 @@ export const votesRelations = relations(votes, ({ one }) => ({
   }),
 }));
 
+export const paymentTransactionsRelations = relations(paymentTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [paymentTransactions.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertPollSchema = createInsertSchema(polls).omit({
   id: true,
@@ -140,6 +186,12 @@ export const insertPollOptionSchema = createInsertSchema(pollOptions).omit({
 export const insertVoteSchema = createInsertSchema(votes).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertPaymentTransactionSchema = createInsertSchema(paymentTransactions).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
 });
 
 // Insert schemas for users
@@ -184,6 +236,8 @@ export type PollOption = typeof pollOptions.$inferSelect;
 export type InsertPollOption = z.infer<typeof insertPollOptionSchema>;
 export type Vote = typeof votes.$inferSelect;
 export type InsertVote = z.infer<typeof insertVoteSchema>;
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
 
 // Extended types for queries
 export type PollWithDetails = Poll & {

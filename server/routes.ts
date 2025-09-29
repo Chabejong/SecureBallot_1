@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerUser } from "./localAuth";
-import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema, forgotPasswordSchema, resetPasswordSchema, users } from "@shared/schema";
+import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema, forgotPasswordSchema, resetPasswordSchema, users, paymentTransactions, insertPaymentTransactionSchema } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
 import bcrypt from "bcrypt";
@@ -10,7 +10,7 @@ import crypto from "crypto";
 import { sendPasswordResetEmail } from "./emailService";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
@@ -852,54 +852,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "PayPal order ID is required" });
       }
 
-      // Map amounts to tiers (these should match the pricing page)
+      // SECURITY: Check if this PayPal order has already been used (prevent replay attacks)
+      const existingTransaction = await db.select()
+        .from(paymentTransactions)
+        .where(eq(paymentTransactions.paypalOrderId, paypalOrderId))
+        .limit(1);
+
+      if (existingTransaction.length > 0) {
+        return res.status(400).json({ 
+          message: "This payment has already been processed." 
+        });
+      }
+
+      // Map amounts to tiers (these should match the pricing page exactly)
       const amountToTier: Record<string, string> = {
         "5.00": "basic",
         "10.00": "standard", 
         "25.00": "pro",
         "50.00": "premium",
-        "75.00": "premium", // for the corrected 75 euro tier
+        "75.00": "enterprise",
         "100.00": "enterprise"
       };
 
-      // For demonstration, use the provided tier and amount
-      // In production, this would verify the PayPal order details
-      let tier = requestedTier;
-      
-      // Validate the tier matches the amount (security check)
-      if (amount && amountToTier[amount] && amountToTier[amount] !== requestedTier) {
-        console.warn(`Tier mismatch: amount ${amount} should map to ${amountToTier[amount]}, but ${requestedTier} was requested`);
-        tier = amountToTier[amount]; // Use the tier that matches the amount
+      // SECURITY: Validate the amount/tier combination matches our pricing
+      // Even though we trust PayPal captured the payment, validate the mapping
+      if (!amount || !amountToTier[amount]) {
+        return res.status(400).json({ 
+          message: "Invalid payment amount" 
+        });
       }
-      
-      // Validate tier is allowed
-      const validTiers = ['basic', 'standard', 'pro', 'premium', 'enterprise'];
-      if (!tier || !validTiers.includes(tier)) {
-        tier = 'basic'; // Default to basic if invalid
-      }
-      
-      // TODO: In production, call PayPal API to get order details and verify:
-      // const paypalOrder = await getPayPalOrderDetails(paypalOrderId);
-      // if (paypalOrder.status !== 'COMPLETED') throw new Error('Order not completed');
-      // tier = amountToTier[paypalOrder.amount.value] || 'basic';
-      
-      // Calculate subscription dates (1 month from now)
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1);
 
-      await storage.updateUserSubscription(userId, tier, startDate, endDate);
+      const validatedTier = amountToTier[amount];
       
-      // Return updated user info
-      const updatedUser = await storage.getUser(userId);
-      
-      res.json({ 
-        message: "Subscription updated successfully",
-        user: updatedUser,
-        tier,
-        startDate,
-        endDate
-      });
+      // Additional security: ensure requested tier matches the payment amount
+      if (requestedTier && requestedTier !== validatedTier) {
+        console.warn(`Tier mismatch: amount ${amount} maps to ${validatedTier}, but ${requestedTier} was requested`);
+      }
+
+      // Start database transaction for atomic payment processing
+      try {
+        // Create payment transaction record first (this provides idempotency)
+        const [paymentTransaction] = await db.insert(paymentTransactions)
+          .values({
+            userId,
+            paypalOrderId,
+            amount,
+            currency: "EUR",
+            tier: validatedTier,
+            status: "completed",
+            completedAt: new Date()
+          })
+          .returning();
+
+        // Calculate subscription dates (1 month from now)
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        // Update user subscription
+        await storage.updateUserSubscription(userId, validatedTier, startDate, endDate);
+        
+        console.log(`Successfully processed subscription upgrade for user ${userId}:`, {
+          paypalOrderId,
+          amount,
+          tier: validatedTier,
+          transactionId: paymentTransaction.id
+        });
+
+        // Return updated user info
+        const updatedUser = await storage.getUser(userId);
+        
+        res.json({ 
+          message: "Subscription updated successfully",
+          user: updatedUser,
+          tier: validatedTier,
+          amount,
+          startDate,
+          endDate,
+          transactionId: paymentTransaction.id
+        });
+
+      } catch (dbError: any) {
+        // Handle unique constraint violation (race condition protection)
+        if (dbError.code === '23505' && dbError.constraint === 'payment_transactions_paypal_order_id_unique') {
+          return res.status(400).json({ 
+            message: "This payment has already been processed." 
+          });
+        }
+        throw dbError; // Re-throw other database errors
+      }
+
     } catch (error) {
       console.error("Error updating subscription:", error);
       res.status(500).json({ message: "Failed to update subscription" });

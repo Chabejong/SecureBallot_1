@@ -101,7 +101,7 @@ export default function CreatePoll() {
       // Always redirect to confirmation page so users can see shareable links
       setLocation(`/poll/${pollData.id}/confirmation`);
     },
-    onError: (error) => {
+    onError: async (error) => {
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -113,6 +113,28 @@ export default function CreatePoll() {
         }, 500);
         return;
       }
+
+      // Handle subscription limit errors
+      if (error instanceof Response && error.status === 403) {
+        try {
+          const errorData = await error.json();
+          if (errorData.needsUpgrade) {
+            toast({
+              title: "Subscription Limit Reached",
+              description: errorData.message || "You've reached your poll limit. Upgrade for unlimited polls!",
+              variant: "destructive",
+            });
+            // Redirect to pricing page after showing the message
+            setTimeout(() => {
+              setLocation("/pricing");
+            }, 2000);
+            return;
+          }
+        } catch (parseError) {
+          // If we can't parse the response, fall through to generic error
+        }
+      }
+
       toast({
         title: "Error",
         description: "Failed to create poll. Please try again.",
