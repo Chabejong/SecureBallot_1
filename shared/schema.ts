@@ -36,6 +36,10 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   resetToken: varchar("reset_token"),
   tokenExpiry: timestamp("token_expiry"),
+  subscriptionTier: varchar("subscription_tier", { length: 20 }).notNull().default("free"), // free, basic, standard, pro, premium, enterprise
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  pollsThisMonth: integer("polls_this_month").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
