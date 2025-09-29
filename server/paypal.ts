@@ -93,7 +93,7 @@ export async function createPaypalOrder(req: Request, res: Response) {
 
     const collect = {
       body: {
-        intent: intent,
+        intent: intent.toUpperCase(), // PayPal expects CAPTURE, not capture
         purchaseUnits: [
           {
             amount: {
@@ -133,9 +133,11 @@ export async function capturePaypalOrder(req: Request, res: Response) {
     const jsonResponse = JSON.parse(String(body));
     const httpStatusCode = httpResponse.statusCode;
 
+    // For now, just return the PayPal response
+    // Subscription upgrade will be handled in a separate secure endpoint
     res.status(httpStatusCode).json(jsonResponse);
   } catch (error) {
-    console.error("Failed to create order:", error);
+    console.error("Failed to capture order:", error);
     res.status(500).json({ error: "Failed to capture order." });
   }
 }

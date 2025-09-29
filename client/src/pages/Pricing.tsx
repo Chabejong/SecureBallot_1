@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import PayPalButton from "@/components/PayPalButton";
+import PricingPayPalButton from "@/components/PricingPayPalButton";
 
 const pricingTiers = [
   {
@@ -202,10 +202,9 @@ export default function Pricing() {
                   </Button>
                 ) : (
                   <div className="w-full">
-                    <PayPalButton
+                    <PricingPayPalButton
                       amount={tier.amount}
-                      currency="EUR"
-                      intent="capture"
+                      tier={tier.name.toLowerCase()}
                       className="w-full"
                     />
                   </div>
