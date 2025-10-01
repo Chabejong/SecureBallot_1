@@ -70,15 +70,26 @@ const runCleanupTask = async () => {
 (async () => {
   const server = await registerRoutes(app);
 
-  // Add admin cleanup endpoint for manual testing
-  app.post('/api/admin/cleanup', async (req, res) => {
-    try {
-      await runCleanupTask();
-      res.json({ message: "Cleanup task triggered successfully" });
-    } catch (error: any) {
-      res.status(500).json({ message: "Cleanup task failed", error: error.message });
-    }
+  // Health check endpoint for deployment monitoring
+  app.get('/api/health', (_req, res) => {
+    res.status(200).json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
   });
+
+  // Add admin cleanup endpoint for manual testing (disabled in production for security)
+  if (app.get("env") === "development") {
+    app.post('/api/admin/cleanup', async (req, res) => {
+      try {
+        await runCleanupTask();
+        res.json({ message: "Cleanup task triggered successfully" });
+      } catch (error: any) {
+        res.status(500).json({ message: "Cleanup task failed", error: error.message });
+      }
+    });
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -126,4 +137,7 @@ const runCleanupTask = async () => {
   }, DAILY_INTERVAL);
   
   log("Daily cleanup scheduler initialized - will run every 24 hours");
-})();
+})().catch((error) => {
+  console.error("Fatal error during server startup:", error);
+  process.exit(1);
+});

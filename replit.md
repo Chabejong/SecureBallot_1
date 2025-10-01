@@ -8,6 +8,21 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Deployment Fixes & Subscription System Changes
+Applied critical deployment fixes to ensure proper server initialization in production:
+
+### Server Configuration
+- Confirmed server listens on 0.0.0.0:5000 for external access in deployment
+- Added `/api/health` endpoint for deployment health checks and monitoring
+- Implemented startup error handling with catch block to prevent silent failures
+- Secured admin cleanup endpoint (development-only access)
+
+### Subscription System Updates
+- Temporarily disabled subscription limit enforcement on poll creation
+- Users can now create unlimited polls regardless of subscription tier
+- Payment system infrastructure (PayPal integration, transaction auditing) remains intact
+- Subscription verification endpoints and UI continue to function
+
 ## September 2025 - Authentication System Migration
 Successfully replaced Replit OIDC authentication with traditional email/password authentication system:
 
