@@ -574,7 +574,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
       
-      const hasVoted = await storage.hasUserVoted(pollId, userId, ipAddress);
+      // Get poll to check if it's anonymous
+      const poll = await storage.getPoll(pollId);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      
+      // Use same logic as vote submission: for anonymous polls use IP, for non-anonymous use userId
+      const identifierUserId = poll.isAnonymous ? undefined : userId;
+      const identifierIP = poll.isAnonymous ? ipAddress : undefined;
+      
+      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP);
       res.json({ hasVoted });
     } catch (error) {
       console.error("Error checking vote status:", error);
