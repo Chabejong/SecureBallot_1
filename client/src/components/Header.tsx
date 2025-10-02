@@ -109,11 +109,6 @@ export function Header() {
 
           {/* Auth Actions */}
           <div className="flex items-center space-x-4">
-            <Badge className="bg-gradient-to-r from-secondary to-primary text-white px-3 py-1">
-              <Shield className="w-3 h-3 mr-1" />
-              Secure
-            </Badge>
-            
             {isAuthenticated ? (
               <div className="flex items-center space-x-2">
                 <Link href="/create">
@@ -198,14 +193,6 @@ export function Header() {
                   <SheetTitle className="text-left">Navigation</SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col space-y-4 mt-8">
-                  {/* Secure Badge */}
-                  <div className="mb-4">
-                    <Badge className="bg-gradient-to-r from-secondary to-primary text-white px-3 py-1">
-                      <Shield className="w-3 h-3 mr-1" />
-                      Secure
-                    </Badge>
-                  </div>
-                  
                   {isAuthenticated ? (
                     <>
                       {/* User Info */}
