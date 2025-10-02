@@ -552,17 +552,32 @@ export default function CreatePoll() {
                       control={form.control}
                       name="isMultipleChoice"
                       render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              data-testid="checkbox-multiple-choice"
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">
-                            Allow multiple selections
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-sm font-medium">
+                            Vote Type
                           </FormLabel>
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant={!field.value ? "default" : "outline"}
+                                className="flex-1"
+                                onClick={() => field.onChange(false)}
+                                data-testid="button-single-choice"
+                              >
+                                Single Choice
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={field.value ? "default" : "outline"}
+                                className="flex-1"
+                                onClick={() => field.onChange(true)}
+                                data-testid="button-multiple-choice"
+                              >
+                                Multiple Choice
+                              </Button>
+                            </div>
+                          </FormControl>
                         </FormItem>
                       )}
                     />
