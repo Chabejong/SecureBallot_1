@@ -98,19 +98,41 @@ export default function Vote() {
       
       return res.json();
     },
-    onSuccess: () => {
-      const isVoteChange = hasVoted?.hasVoted;
+    onMutate: async () => {
+      // Cancel outgoing refetches to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: [`/api/polls/${id}/has-voted`] });
+      
+      // Snapshot the previous value for rollback
+      const previousHasVoted = queryClient.getQueryData<{ hasVoted: boolean }>([`/api/polls/${id}/has-voted`]);
+      
+      // Optimistically update to prevent duplicate submissions
+      queryClient.setQueryData([`/api/polls/${id}/has-voted`], { hasVoted: true });
+      
+      // Return context with snapshot for use in onSuccess and onError
+      return { previousHasVoted };
+    },
+    onSuccess: async (_data, _variables, context) => {
+      const isVoteChange = context?.previousHasVoted?.hasVoted ?? false;
       toast({
         title: isVoteChange ? "Vote Updated" : "Vote Submitted",
         description: isVoteChange 
           ? "Your vote has been updated successfully!" 
           : "Your vote has been recorded successfully!",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/has-voted`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/results`] });
+      // Await invalidation to ensure data is synced before navigation
+      await queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/has-voted`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/results`] });
       setLocation(`/poll/${id}/results`);
     },
-    onError: (error: any) => {
+    onError: async (error: any, _variables, context) => {
+      // Rollback optimistic update using snapshot
+      if (context?.previousHasVoted !== undefined) {
+        queryClient.setQueryData([`/api/polls/${id}/has-voted`], context.previousHasVoted);
+      } else {
+        // Fallback: invalidate if no snapshot
+        await queryClient.invalidateQueries({ queryKey: [`/api/polls/${id}/has-voted`] });
+      }
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",

@@ -485,19 +485,8 @@ export class DatabaseStorage implements IStorage {
     // Get limit for tier, default to 1 for unknown tiers (but preserve null for unlimited)
     const limit = tier in tierLimits ? tierLimits[tier] : 1;
     
-    console.log('[canCreatePoll DEBUG]', {
-      userId,
-      tier,
-      currentPollCount,
-      limit,
-      isSubscriptionActive,
-      subscriptionEndDate: user.subscriptionEndDate,
-      now: now.toISOString()
-    });
-    
     // If it's a paid tier but subscription is expired, treat as free tier
     if (tier !== "free" && !isSubscriptionActive) {
-      console.log('[canCreatePoll] Subscription expired, treating as free tier');
       return { 
         canCreate: currentPollCount < 1, 
         currentTier: "free", 
@@ -508,11 +497,6 @@ export class DatabaseStorage implements IStorage {
     
     // For free tier or active paid subscriptions
     const canCreate = limit === null || currentPollCount < limit;
-    
-    console.log('[canCreatePoll] Final decision:', {
-      canCreate,
-      calculation: `limit (${limit}) === null || currentPollCount (${currentPollCount}) < limit (${limit})`
-    });
     
     return { 
       canCreate, 

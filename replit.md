@@ -8,34 +8,32 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## October 2025 - Voting System Bug Fix
-Fixed critical duplicate vote bug in single-choice polls:
+## October 2025 - Vote Synchronization with Optimistic Updates
+Implemented proper React Query optimistic updates to prevent duplicate vote submissions:
 
 ### Issue
-Users could vote twice in single-choice polls before the system blocked subsequent attempts, particularly noticeable on mobile devices with rapid clicks.
-
-### Root Cause
-- Backend wasn't extracting browser fingerprint from request headers
-- Frontend Vote.tsx component wasn't sending fingerprint in X-Fingerprint header
-- Created race condition where two quick clicks could both pass duplicate vote check
+Race condition allowed duplicate votes when users rapidly double-clicked the submit button before the hasVoted status was updated from the server.
 
 ### Solution Applied
-**Backend Changes (server/routes.ts):**
-- Added browser fingerprint extraction from X-Fingerprint header
-- Updated vote submission endpoint to include fingerprint in duplicate checking
-- Updated vote creation to store fingerprint in database
-- Updated has-voted endpoint to check fingerprint
+Implemented proper React Query `onMutate` pattern for optimistic updates in both Vote.tsx and PublicVote.tsx:
 
-**Frontend Changes (client/src/pages/Vote.tsx):**
-- Added generateBrowserFingerprint() function (matches PublicVote.tsx implementation)
-- Modified vote mutation to send X-Fingerprint header
-- Modified has-voted query to send X-Fingerprint header
+**Optimistic Update Pattern:**
+1. **onMutate**: Captures previous `hasVoted` cache value before mutating, cancels in-flight queries, optimistically sets `hasVoted: true`, and returns snapshot as context
+2. **onSuccess**: Uses context snapshot (not mutated cache) to determine first-time vs. update vote for correct toast messaging
+3. **onError**: Rolls back optimistic update using snapshot, restoring exact previous cache state
+
+**Key Improvements:**
+- Immediate UI feedback: Submit button disabled instantly via optimistic cache update
+- Proper rollback: Failed submissions restore previous cache state synchronously
+- Correct messaging: First-time votes show "Vote Submitted!", updates show "Vote Updated"
+- Race condition eliminated: Multiple rapid clicks prevented by instant local state update
 
 ### Verification
-Comprehensive e2e test confirmed:
-- Only one vote recorded despite rapid double-clicks
-- Subsequent vote attempts properly blocked with "Already Voted" message
-- Database unique constraints enforce one vote per device for anonymous polls
+E2e test confirmed:
+- Despite 6 rapid button clicks, only 1 vote recorded in database
+- Toast message correctly shows "Vote Submitted!" for first-time votes
+- Button becomes disabled immediately on first click
+- Results display correctly after successful vote
 
 ## October 2025 - User Subscription Display
 Added subscription tier display to user profiles:

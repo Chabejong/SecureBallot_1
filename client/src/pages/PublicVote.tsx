@@ -112,20 +112,41 @@ export default function PublicVote() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Cancel outgoing refetches to prevent race conditions
+      await queryClient.cancelQueries({ queryKey: [`/api/public/polls/${params?.slug}/has-voted`] });
+      
+      // Snapshot the previous value for rollback
+      const previousHasVoted = queryClient.getQueryData<{ hasVoted: boolean }>([`/api/public/polls/${params?.slug}/has-voted`]);
+      
+      // Optimistically update to prevent duplicate submissions
+      queryClient.setQueryData([`/api/public/polls/${params?.slug}/has-voted`], { hasVoted: true });
+      
+      // Return context with snapshot for use in onSuccess and onError
+      return { previousHasVoted };
+    },
+    onSuccess: async () => {
       toast({
         title: "Vote Submitted!",
         description: "Your anonymous vote has been recorded.",
       });
       
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: [`/api/public/polls/${params?.slug}/has-voted`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/public/polls/${params?.slug}/results`] });
+      // Await invalidation to ensure data is synced immediately
+      await queryClient.invalidateQueries({ queryKey: [`/api/public/polls/${params?.slug}/has-voted`] });
+      await queryClient.invalidateQueries({ queryKey: [`/api/public/polls/${params?.slug}/results`] });
       
       // Show results after voting
       setShowResults(true);
     },
-    onError: (error: Error) => {
+    onError: async (error: Error, _variables, context) => {
+      // Rollback optimistic update using snapshot
+      if (context?.previousHasVoted !== undefined) {
+        queryClient.setQueryData([`/api/public/polls/${params?.slug}/has-voted`], context.previousHasVoted);
+      } else {
+        // Fallback: invalidate if no snapshot
+        await queryClient.invalidateQueries({ queryKey: [`/api/public/polls/${params?.slug}/has-voted`] });
+      }
+      
       toast({
         title: "Error",
         description: error.message,
