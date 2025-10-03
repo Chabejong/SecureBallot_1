@@ -126,11 +126,53 @@ export const votes = pgTable("votes", {
   pollOptionIndex: index("votes_poll_option_idx").on(table.pollId, table.optionId),
 }));
 
+// User groups table for targeting polls to specific user segments
+export const groups = pgTable("groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  nameIndex: index("groups_name_idx").on(table.name),
+}));
+
+// Junction table for user-group membership
+export const userGroups = pgTable("user_groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Unique constraint - user can only be in a group once
+  userGroupUnique: uniqueIndex("user_groups_unique").on(table.userId, table.groupId),
+  // Indexes for queries
+  userIdIndex: index("user_groups_user_id_idx").on(table.userId),
+  groupIdIndex: index("user_groups_group_id_idx").on(table.groupId),
+}));
+
+// Junction table for poll-group targeting
+export const pollTargetGroups = pgTable("poll_target_groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  groupId: varchar("group_id").notNull().references(() => groups.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Unique constraint - poll can only target a group once
+  pollGroupUnique: uniqueIndex("poll_target_groups_unique").on(table.pollId, table.groupId),
+  // Indexes for queries
+  pollIdIndex: index("poll_target_groups_poll_id_idx").on(table.pollId),
+  groupIdIndex: index("poll_target_groups_group_id_idx").on(table.groupId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   polls: many(polls),
   votes: many(votes),
   paymentTransactions: many(paymentTransactions),
+  userGroups: many(userGroups),
+  createdGroups: many(groups),
 }));
 
 export const pollsRelations = relations(polls, ({ one, many }) => ({
@@ -140,6 +182,7 @@ export const pollsRelations = relations(polls, ({ one, many }) => ({
   }),
   options: many(pollOptions),
   votes: many(votes),
+  targetGroups: many(pollTargetGroups),
 }));
 
 export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
@@ -172,6 +215,37 @@ export const paymentTransactionsRelations = relations(paymentTransactions, ({ on
   }),
 }));
 
+export const groupsRelations = relations(groups, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [groups.createdById],
+    references: [users.id],
+  }),
+  userGroups: many(userGroups),
+  pollTargetGroups: many(pollTargetGroups),
+}));
+
+export const userGroupsRelations = relations(userGroups, ({ one }) => ({
+  user: one(users, {
+    fields: [userGroups.userId],
+    references: [users.id],
+  }),
+  group: one(groups, {
+    fields: [userGroups.groupId],
+    references: [groups.id],
+  }),
+}));
+
+export const pollTargetGroupsRelations = relations(pollTargetGroups, ({ one }) => ({
+  poll: one(polls, {
+    fields: [pollTargetGroups.pollId],
+    references: [polls.id],
+  }),
+  group: one(groups, {
+    fields: [pollTargetGroups.groupId],
+    references: [groups.id],
+  }),
+}));
+
 // Insert schemas
 export const insertPollSchema = createInsertSchema(polls).omit({
   id: true,
@@ -193,6 +267,22 @@ export const insertPaymentTransactionSchema = createInsertSchema(paymentTransact
   id: true,
   createdAt: true,
   completedAt: true,
+});
+
+export const insertGroupSchema = createInsertSchema(groups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserGroupSchema = createInsertSchema(userGroups).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPollTargetGroupSchema = createInsertSchema(pollTargetGroups).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Insert schemas for users
@@ -239,6 +329,12 @@ export type Vote = typeof votes.$inferSelect;
 export type InsertVote = z.infer<typeof insertVoteSchema>;
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
 export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type UserGroup = typeof userGroups.$inferSelect;
+export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
+export type PollTargetGroup = typeof pollTargetGroups.$inferSelect;
+export type InsertPollTargetGroup = z.infer<typeof insertPollTargetGroupSchema>;
 
 // Extended types for queries
 export type PollWithDetails = Poll & {
@@ -246,6 +342,7 @@ export type PollWithDetails = Poll & {
   options: PollOption[];
   voteCount: number;
   hasVoted?: boolean;
+  targetGroups?: Group[];
 };
 
 export type PollWithResults = PollWithDetails & {
@@ -255,4 +352,9 @@ export type PollWithResults = PollWithDetails & {
     voteCount: number;
     percentage: number;
   }>;
+};
+
+export type GroupWithMembers = Group & {
+  memberCount: number;
+  members?: User[];
 };
