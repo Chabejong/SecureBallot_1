@@ -8,6 +8,29 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Admin User & Payment System Updates
+Latest updates to admin privileges and payment configuration:
+
+### Admin User Implementation
+- Added `isAdmin` boolean field to users schema for admin privilege tracking
+- Implemented admin user: **chabejong@yahoo.com** with unrestricted access
+- Admin users bypass all subscription limits and can create unlimited polls for unlimited participants
+- Created development-only endpoint (`/api/admin/set-admin`) for admin status management
+- Admin check integrated into poll creation limits logic
+
+### PayPal Configuration Updates
+- Updated PayPal payment account to: **nkwettae@yahoo.com**
+- Configured PayPal API credentials (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET)
+- Updated subscription pricing tiers:
+  - Free: 1 poll/month, up to 15 participants
+  - Basic (€5): Unlimited polls, up to 50 participants
+  - Standard (€10): Unlimited polls, 51-100 participants
+  - Pro (€20): Unlimited polls, 101-250 participants
+  - Premium (€50): Unlimited polls, 251-500 participants
+  - Advanced (€75): Unlimited polls, 501-750 participants
+  - Enterprise (€100): Unlimited polls, unlimited participants
+- Added donation page with PayPal integration
+
 ## October 2025 - Deployment Fixes & Subscription System Changes
 Applied critical deployment fixes to ensure proper server initialization in production:
 
