@@ -56,6 +56,9 @@ export interface IStorage {
   getUserPollCount(userId: string, month?: Date): Promise<number>;
   canCreatePoll(userId: string): Promise<{ canCreate: boolean; currentTier: string; pollCount: number; limit: number | null; }>;
   updateUserSubscription(userId: string, tier: string, startDate: Date, endDate: Date): Promise<void>;
+  
+  // Admin operations
+  setAdminStatus(email: string, isAdmin: boolean): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -450,6 +453,16 @@ export class DatabaseStorage implements IStorage {
       return { canCreate: false, currentTier: "free", pollCount: 0, limit: 1 };
     }
 
+    // Admin users have unlimited access
+    if (user.isAdmin) {
+      return {
+        canCreate: true,
+        currentTier: "admin",
+        pollCount: 0,
+        limit: null
+      };
+    }
+
     const currentPollCount = await this.getUserPollCount(userId);
     const tier = user.subscriptionTier || "free";
     
@@ -500,6 +513,15 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+  }
+
+  async setAdminStatus(email: string, isAdmin: boolean): Promise<void> {
+    await db.update(users)
+      .set({
+        isAdmin,
+        updatedAt: new Date()
+      })
+      .where(eq(users.email, email));
   }
 }
 

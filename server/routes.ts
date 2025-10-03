@@ -1010,6 +1010,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint - development only
+  if (process.env.NODE_ENV === 'development') {
+    app.post('/api/admin/set-admin', async (req, res) => {
+      try {
+        const { email, isAdmin } = req.body;
+        
+        if (!email || typeof isAdmin !== 'boolean') {
+          return res.status(400).json({ message: "Email and isAdmin (boolean) are required" });
+        }
+        
+        await storage.setAdminStatus(email, isAdmin);
+        res.json({ message: `Admin status for ${email} set to ${isAdmin}` });
+      } catch (error) {
+        console.error("Error setting admin status:", error);
+        res.status(500).json({ message: "Failed to set admin status" });
+      }
+    });
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }
