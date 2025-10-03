@@ -116,8 +116,8 @@ export const votes = pgTable("votes", {
 }, (table) => ({
   // Unique constraint for authenticated users - one vote per user per poll
   userPollUnique: uniqueIndex("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
-  // Unique constraint for anonymous users - one vote per device per poll  
-  anonymousDeviceUnique: uniqueIndex("votes_anonymous_device_unique").on(table.pollId, table.ipAddress, table.browserFingerprint).where(sql`voter_id IS NULL`),
+  // Unique constraint for anonymous users - one vote per IP per poll (browserFingerprint stored but not in constraint due to NULL handling)
+  anonymousIpUnique: uniqueIndex("votes_anonymous_ip_unique").on(table.pollId, table.ipAddress).where(sql`voter_id IS NULL AND ip_address IS NOT NULL`),
   // Performance indexes
   pollIdIndex: index("votes_poll_id_idx").on(table.pollId),
   voterIdIndex: index("votes_voter_id_idx").on(table.voterId),
