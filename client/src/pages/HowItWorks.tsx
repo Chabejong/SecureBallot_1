@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2, Crown, CreditCard } from "lucide-react";
+import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2, Crown, CreditCard, Heart } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -233,13 +233,18 @@ export default function HowItWorks() {
                 <div className="flex items-start gap-3">
                   <CreditCard className="w-5 h-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-primary mb-2">How Upgrades Work:</p>
+                    <p className="font-medium text-primary mb-2">Payment Process:</p>
                     <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                       <li>Visit the Pricing page to view all available plans</li>
                       <li>Choose the plan that matches your expected participant count</li>
-                      <li>Complete secure payment via PayPal</li>
-                      <li>Instantly unlock unlimited poll creation and higher participant limits</li>
+                      <li>Click "Upgrade" to proceed to secure PayPal checkout</li>
+                      <li>Complete payment through PayPal (no PayPal account required - you can pay with credit/debit card)</li>
+                      <li>Your subscription is activated instantly after successful payment</li>
+                      <li>Start creating unlimited polls with your new participant limits</li>
                     </ol>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      <strong>Payment Account:</strong> All payments are processed securely through PayPal to account nkwettae@yahoo.com. You'll receive a payment confirmation email after completing your purchase.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -320,7 +325,15 @@ export default function HowItWorks() {
                   <Camera className="w-5 h-5 text-foreground mt-0.5" />
                   <div>
                     <p className="font-medium text-foreground">Add Photos to Options</p>
-                    <p className="text-sm text-muted-foreground">Make your poll visually appealing by adding an image to each option (e.g., "Which logo do you prefer?").</p>
+                    <p className="text-sm text-muted-foreground mb-2">Make your poll visually appealing by adding an image to each option (e.g., "Which logo do you prefer?").</p>
+                    <div className="text-sm text-muted-foreground bg-background/50 p-2 rounded">
+                      <p className="font-medium mb-1">Photo Requirements:</p>
+                      <ul className="list-disc list-inside space-y-0.5 ml-1">
+                        <li><strong>Formats:</strong> JPG, JPEG, PNG, GIF, WebP</li>
+                        <li><strong>Max Size:</strong> 5MB per image</li>
+                        <li><strong>Recommended:</strong> 800x600px or similar aspect ratio for best display</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
                 
@@ -359,12 +372,52 @@ export default function HowItWorks() {
             </CardContent>
           </Card>
 
-          {/* Section 6: Accessibility */}
+          {/* Section 6: Support & Donations */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Heart className="w-6 h-6 text-primary" />
+                6. Support Our Platform
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Help us keep The Ballot Box running and improving for everyone.
+              </p>
+              
+              <div className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-lg p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Heart className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-2">Make a Donation</h4>
+                    <p className="text-muted-foreground mb-4">
+                      Support our mission to provide secure, accessible voting for everyone. Your donation helps us maintain our servers, improve features, and keep the platform free for basic users.
+                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Donation Options:</strong>
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                        <li>Quick donations: €5, €15, or €25</li>
+                        <li>Custom amount: Choose any amount you wish to contribute</li>
+                        <li>Secure payment processing through PayPal</li>
+                        <li>Visit our <a href="/donate" className="text-primary hover:underline font-medium">Donate page</a> to contribute</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 7: Accessibility */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Smartphone className="w-6 h-6 text-primary" />
-                6. Accessibility
+                7. Accessibility
               </CardTitle>
             </CardHeader>
             <CardContent>
