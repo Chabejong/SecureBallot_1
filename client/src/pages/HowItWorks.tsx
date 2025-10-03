@@ -155,7 +155,7 @@ export default function HowItWorks() {
                   <div className="flex-1">
                     <p className="font-medium text-foreground mb-2">Free Tier</p>
                     <p className="text-muted-foreground">
-                      Perfect for trying out our service. Create <strong>1 poll per month</strong> with basic features and unlimited voting.
+                      Perfect for trying out our service. Create <strong>1 poll per month</strong> with basic features and maximum of <strong>20 participants</strong>.
                     </p>
                   </div>
                 </div>
@@ -222,7 +222,7 @@ export default function HowItWorks() {
                     </Badge>
                     <div className="flex-1">
                       <p className="font-medium text-foreground mb-1">Ultimate Plan</p>
-                      <p className="text-sm text-muted-foreground">Up to 1000 participants</p>
+                      <p className="text-sm text-muted-foreground">Unlimited participants</p>
                       <p className="text-sm text-muted-foreground">Unlimited polls</p>
                     </div>
                   </div>
