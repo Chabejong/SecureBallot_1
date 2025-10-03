@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -48,6 +49,7 @@ export default function CreatePoll() {
     {text: "", imageUrl: ""}, 
     {text: "", imageUrl: ""}
   ]);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   const form = useForm<CreatePollForm>({
     resolver: zodResolver(createPollSchema),
@@ -115,22 +117,19 @@ export default function CreatePoll() {
       }
 
       // Handle subscription limit errors
-      if (error instanceof Response && error.status === 403) {
+      // apiRequest throws Error with format "403: {json response}"
+      if (error instanceof Error && error.message.startsWith('403:')) {
         try {
-          const errorData = await error.json();
+          // Extract JSON from error message
+          const jsonStr = error.message.substring(4).trim();
+          const errorData = JSON.parse(jsonStr);
           if (errorData.needsUpgrade) {
-            toast({
-              title: "Subscription Limit Reached",
-              description: errorData.message || "You've reached your poll limit. Upgrade for unlimited polls!",
-              variant: "destructive",
-            });
-            // Redirect to pricing page after showing the message
-            setTimeout(() => {
-              setLocation("/pricing");
-            }, 2000);
+            // Show upgrade dialog instead of toast
+            setShowUpgradeDialog(true);
             return;
           }
         } catch (parseError) {
+          console.error('Failed to parse 403 error:', parseError);
           // If we can't parse the response, fall through to generic error
         }
       }
@@ -655,6 +654,29 @@ export default function CreatePoll() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upgrade Dialog */}
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent data-testid="dialog-upgrade-required">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Upgrade Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please upgrade to create more polls.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setShowUpgradeDialog(false);
+                setLocation("/pricing");
+              }}
+              data-testid="button-upgrade-now"
+            >
+              Upgrade Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

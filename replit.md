@@ -8,6 +8,21 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Subscription Limit Alert Dialog
+Replaced toast notification with AlertDialog when users hit subscription limits:
+
+### Implementation
+- When free tier users attempt to create a second poll, an AlertDialog now appears with "Please upgrade to create more polls." message
+- Dialog includes "Upgrade Now" button that redirects to /pricing page
+- Replaced previous toast + auto-redirect approach with explicit user-driven upgrade flow
+- Error parsing updated to handle apiRequest's Error format ("403: {json}")
+
+### User Experience
+- More prominent and less dismissible than toast notifications
+- User must click "Upgrade Now" to proceed to pricing page
+- Dialog blocks interaction with form until user responds
+- Clearer call-to-action for subscription upgrades
+
 ## October 2025 - Vote Synchronization with Optimistic Updates
 Implemented proper React Query optimistic updates to prevent duplicate vote submissions:
 
