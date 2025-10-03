@@ -7,14 +7,14 @@ import { useState } from "react";
 import PayPalButton from "@/components/PayPalButton";
 
 const predefinedAmounts = [
-  { amount: "5.00", label: "€5", icon: Coffee, description: "Buy us a coffee" },
+  { amount: "2.00", label: "€2", icon: Coffee, description: "Buy us a coffee" },
   { amount: "15.00", label: "€15", icon: Heart, description: "Show some love" },
   { amount: "25.00", label: "€25", icon: Star, description: "Super supporter" },
 ];
 
 export default function Donate() {
   const [customAmount, setCustomAmount] = useState("");
-  const [selectedAmount, setSelectedAmount] = useState("5.00");
+  const [selectedAmount, setSelectedAmount] = useState("2.00");
   const [isCustom, setIsCustom] = useState(false);
 
   const handlePredefinedSelect = (amount: string) => {
@@ -32,7 +32,7 @@ export default function Donate() {
   const getCurrentAmount = () => {
     if (isCustom && customAmount) {
       const amount = parseFloat(customAmount);
-      return amount > 0 ? amount.toFixed(2) : "5.00";
+      return amount > 0 ? amount.toFixed(2) : "2.00";
     }
     return selectedAmount;
   };
