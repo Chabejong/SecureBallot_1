@@ -10,11 +10,11 @@ const pricingTiers = [
     price: "€0",
     period: "month",
     description: "Perfect for trying out The Ballot Box",
-    participants: "Up to 15 participants",
+    participants: "Up to 20 participants",
     pollLimit: "1 poll per month",
     features: [
       "1 poll per month",
-      "Up to 15 participants",
+      "Up to 20 participants",
       "Basic voting options",
       "Email support"
     ],
@@ -45,11 +45,11 @@ const pricingTiers = [
     price: "€10",
     period: "month",
     description: "Perfect for growing organizations",
-    participants: "51-100 participants",
+    participants: "Up to 100 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "51-100 participants",
+      "Up to 100 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -60,15 +60,15 @@ const pricingTiers = [
     amount: "10.00"
   },
   {
-    name: "Pro",
-    price: "€20",
+    name: "Premium",
+    price: "€25",
     period: "month",
     description: "For larger teams and events",
-    participants: "101-250 participants",
+    participants: "Up to 250 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "101-250 participants",
+      "Up to 250 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -78,18 +78,18 @@ const pricingTiers = [
     ],
     isPopular: false,
     isFree: false,
-    amount: "20.00"
+    amount: "25.00"
   },
   {
-    name: "Premium",
+    name: "Professional",
     price: "€50",
     period: "month",
     description: "For large organizations",
-    participants: "251-500 participants",
+    participants: "Up to 500 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "251-500 participants",
+      "Up to 500 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -103,15 +103,15 @@ const pricingTiers = [
     amount: "50.00"
   },
   {
-    name: "Advanced",
+    name: "Enterprise",
     price: "€75",
     period: "month",
     description: "For very large organizations",
-    participants: "501-750 participants",
+    participants: "Up to 1000 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "501-750 participants",
+      "Up to 1000 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -126,7 +126,7 @@ const pricingTiers = [
     amount: "75.00"
   },
   {
-    name: "Enterprise",
+    name: "Ultimate",
     price: "€100",
     period: "month",
     description: "For unlimited participants",
