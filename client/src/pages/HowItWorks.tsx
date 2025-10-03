@@ -211,7 +211,7 @@ export default function HowItWorks() {
                     </Badge>
                     <div className="flex-1">
                       <p className="font-medium text-foreground mb-1">Enterprise Plan</p>
-                      <p className="text-sm text-muted-foreground">Up to 750 participants</p>
+                      <p className="text-sm text-muted-foreground">Up to 1000 participants</p>
                       <p className="text-sm text-muted-foreground">Unlimited polls</p>
                     </div>
                   </div>
