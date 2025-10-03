@@ -482,7 +482,8 @@ export class DatabaseStorage implements IStorage {
       ultimate: null, // unlimited
     };
 
-    const limit = tierLimits[tier] ?? 1;
+    // Get limit for tier, default to 1 for unknown tiers (but preserve null for unlimited)
+    const limit = tier in tierLimits ? tierLimits[tier] : 1;
     
     console.log('[canCreatePoll DEBUG]', {
       userId,
