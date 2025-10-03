@@ -477,7 +477,9 @@ export class DatabaseStorage implements IStorage {
       standard: null, // unlimited  
       pro: null, // unlimited
       premium: null, // unlimited
+      professional: null, // unlimited
       enterprise: null, // unlimited
+      ultimate: null, // unlimited
     };
 
     const limit = tierLimits[tier] ?? 1;
