@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
-import { Plus, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { Plus, TrendingUp, Users, BarChart3, Shield, Lock, CheckCircle } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
 export default function Home() {
@@ -196,6 +196,58 @@ export default function Home() {
           )}
         </section>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-card border-t border-border py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div className="md:col-span-2">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-bold text-foreground">The Ballot Box</span>
+              </div>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                Empowering communities with secure, transparent, and accessible voting technology. 
+                Every voice matters, every vote counts.
+              </p>
+              <div className="flex space-x-4">
+                <Badge className="bg-gradient-to-r from-secondary to-primary text-white">
+                  <Shield className="w-3 h-3 mr-1" />
+                  SOC 2 Compliant
+                </Badge>
+                <Badge className="bg-gradient-to-r from-secondary to-primary text-white">
+                  <Lock className="w-3 h-3 mr-1" />
+                  256-bit Encryption
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Platform</h3>
+              <ul className="space-y-2">
+                <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">How it Works</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Security</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">API Documentation</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-4">Support</h3>
+              <ul className="space-y-2">
+                <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-help-center">Help Center</a></li>
+                <li><a href="mailto:chabejong@yahoo.com" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-contact-us">Contact Us: chabejong@yahoo.com</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-border mt-12 pt-8 text-center">
+            <p className="text-muted-foreground text-sm">
+              © 2024 The Ballot Box. All rights reserved. Built with security and transparency in mind.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
