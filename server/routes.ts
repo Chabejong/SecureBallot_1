@@ -878,10 +878,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const amountToTier: Record<string, string> = {
         "5.00": "basic",
         "10.00": "standard", 
-        "25.00": "pro",
-        "50.00": "premium",
+        "25.00": "premium",
+        "50.00": "professional",
         "75.00": "enterprise",
-        "100.00": "enterprise"
+        "100.00": "ultimate"
       };
 
       // SECURITY: Validate the amount/tier combination matches our pricing

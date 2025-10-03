@@ -52,6 +52,32 @@ export function Header() {
     return "U";
   };
 
+  const getTierDisplayName = (tier: string) => {
+    const tierMap: Record<string, string> = {
+      free: "Free",
+      basic: "Basic",
+      standard: "Standard",
+      premium: "Premium",
+      professional: "Professional",
+      enterprise: "Enterprise",
+      ultimate: "Ultimate"
+    };
+    return tierMap[tier] || "Free";
+  };
+
+  const getTierColor = (tier: string) => {
+    const colorMap: Record<string, string> = {
+      free: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+      basic: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+      standard: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+      premium: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
+      professional: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300",
+      enterprise: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+      ultimate: "bg-gradient-to-r from-yellow-400 to-orange-500 text-white"
+    };
+    return colorMap[tier] || colorMap.free;
+  };
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -131,7 +157,7 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <div className="flex items-center justify-start gap-2 p-2">
-                      <div className="flex flex-col space-y-1 leading-none">
+                      <div className="flex flex-col space-y-1 leading-none w-full">
                         {user?.firstName && (
                           <p className="font-medium" data-testid="text-user-name">
                             {user.firstName} {user.lastName}
@@ -141,6 +167,14 @@ export function Header() {
                           <p className="w-[200px] truncate text-sm text-muted-foreground" data-testid="text-user-email">
                             {user.email}
                           </p>
+                        )}
+                        {user?.subscriptionTier && (
+                          <Badge 
+                            className={`mt-2 w-fit text-xs ${getTierColor(user.subscriptionTier)}`}
+                            data-testid="badge-subscription-tier"
+                          >
+                            {getTierDisplayName(user.subscriptionTier)}
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -213,6 +247,14 @@ export function Header() {
                             <p className="text-xs text-muted-foreground truncate" data-testid="text-mobile-user-email">
                               {user.email}
                             </p>
+                          )}
+                          {user?.subscriptionTier && (
+                            <Badge 
+                              className={`mt-1 w-fit text-xs ${getTierColor(user.subscriptionTier)}`}
+                              data-testid="badge-mobile-subscription-tier"
+                            >
+                              {getTierDisplayName(user.subscriptionTier)}
+                            </Badge>
                           )}
                         </div>
                       </div>
