@@ -48,6 +48,15 @@ export default function Donate() {
             Help us keep The Ballot Box running and improve our services. Your donation supports 
             server costs, development, and new features for the community.
           </p>
+          
+          <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg max-w-md mx-auto">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2" data-testid="text-donation-paypal-label">
+              Donate via PayPal:
+            </p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-donation-paypal-email">
+              nkwettae@yahoo.com
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

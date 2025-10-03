@@ -10,11 +10,11 @@ const pricingTiers = [
     price: "€0",
     period: "month",
     description: "Perfect for trying out The Ballot Box",
-    participants: "Up to 10 participants",
+    participants: "Up to 15 participants",
     pollLimit: "1 poll per month",
     features: [
-      "Create 1 poll per month",
-      "Up to 10 participants",
+      "1 poll per month",
+      "Up to 15 participants",
       "Basic voting options",
       "Email support"
     ],
@@ -49,7 +49,7 @@ const pricingTiers = [
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "Up to 100 participants",
+      "51-100 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -61,14 +61,14 @@ const pricingTiers = [
   },
   {
     name: "Pro",
-    price: "€25",
+    price: "€20",
     period: "month",
     description: "For larger teams and events",
     participants: "101-250 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "Up to 250 participants",
+      "101-250 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -78,7 +78,7 @@ const pricingTiers = [
     ],
     isPopular: false,
     isFree: false,
-    amount: "25.00"
+    amount: "20.00"
   },
   {
     name: "Premium",
@@ -89,7 +89,7 @@ const pricingTiers = [
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "Up to 500 participants",
+      "251-500 participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -103,15 +103,38 @@ const pricingTiers = [
     amount: "50.00"
   },
   {
-    name: "Enterprise",
-    price: "€100",
+    name: "Advanced",
+    price: "€75",
     period: "month",
-    description: "For massive events and organizations",
-    participants: "751-1000 participants",
+    description: "For very large organizations",
+    participants: "501-750 participants",
     pollLimit: "Unlimited polls",
     features: [
       "Unlimited polls",
-      "Up to 1000 participants",
+      "501-750 participants",
+      "Anonymous voting",
+      "Real-time results",
+      "Multiple choice polls",
+      "Poll scheduling",
+      "CSV export",
+      "Custom branding",
+      "Dedicated support",
+      "24/7 phone support"
+    ],
+    isPopular: false,
+    isFree: false,
+    amount: "75.00"
+  },
+  {
+    name: "Enterprise",
+    price: "€100",
+    period: "month",
+    description: "For unlimited participants",
+    participants: "Unlimited participants",
+    pollLimit: "Unlimited polls",
+    features: [
+      "Unlimited polls",
+      "Unlimited participants",
       "Anonymous voting",
       "Real-time results",
       "Multiple choice polls",
@@ -119,7 +142,8 @@ const pricingTiers = [
       "CSV export",
       "Custom branding",
       "Dedicated account manager",
-      "24/7 phone support"
+      "24/7 phone support",
+      "API access"
     ],
     isPopular: false,
     isFree: false,
@@ -140,7 +164,7 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {pricingTiers.map((tier, index) => (
             <Card 
               key={tier.name} 
@@ -222,6 +246,15 @@ export default function Pricing() {
             All payments are processed securely through PayPal. Your subscription gives you access to unlimited polls 
             for the specified participant count for one month. Cancel anytime.
           </p>
+          
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg max-w-md mx-auto">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2" data-testid="text-paypal-label">
+              PayPal Account:
+            </p>
+            <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-paypal-email">
+              nkwettae@yahoo.com
+            </p>
+          </div>
           
           <div className="mt-8 flex justify-center items-center space-x-4">
             <div className="flex items-center space-x-2">
