@@ -8,6 +8,28 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Critical Security Fix: Duplicate Vote Vulnerability
+Fixed critical vulnerability allowing multiple votes from the same device:
+
+### Vulnerability
+Users could vote multiple times in anonymous polls by scanning the QR code repeatedly or navigating back to the voting page after voting.
+
+### Root Cause
+Database unique constraint only enforced (pollId, ipAddress) but backend logic checked (pollId, ipAddress, browserFingerprint). This mismatch allowed users to vote again with the same IP but different browser fingerprint (e.g., after clearing localStorage).
+
+### Solution Applied
+1. Updated database schema to enforce unique constraint on (pollId, coalesce(ipAddress, ''), coalesce(browserFingerprint, '')) for anonymous votes
+2. Removed old constraint that only checked (pollId, ipAddress)
+3. Used coalesce() to properly handle NULL values in the constraint
+4. Cleaned up 7 existing duplicate votes from the database
+
+### Verification
+E2e test confirmed:
+- First vote succeeds normally
+- Subsequent votes from same device (same IP + fingerprint) are properly blocked
+- Database enforces only 1 vote per device per poll
+- User sees "already voted" status when returning to voting page
+
 ## October 2025 - Subscription Limit Alert Dialog
 Replaced toast notification with AlertDialog when users hit subscription limits:
 
