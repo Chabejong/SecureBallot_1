@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Header } from "@/components/Header";
@@ -12,6 +12,35 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { AlertCircle, CheckCircle, Shield } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
+// Generate a unique browser fingerprint for anonymous vote tracking
+const generateBrowserFingerprint = (): string => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('Browser fingerprint', 2, 2);
+  }
+  
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    new Date().getTimezoneOffset(),
+    canvas.toDataURL(),
+    navigator.hardwareConcurrency || 'unknown',
+  ].join('|');
+  
+  // Create a simple hash
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    const char = fingerprint.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return hash.toString(36);
+};
+
 export default function Vote() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
@@ -19,6 +48,9 @@ export default function Vote() {
   const queryClient = useQueryClient();
   const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Generate browser fingerprint once per component mount
+  const browserFingerprint = useMemo(() => generateBrowserFingerprint(), []);
 
   const { data: poll, isLoading } = useQuery({
     queryKey: [`/api/polls/${id}`],
@@ -29,23 +61,42 @@ export default function Vote() {
   const { data: hasVoted } = useQuery({
     queryKey: [`/api/polls/${id}/has-voted`],
     enabled: !!id,
+    queryFn: async () => {
+      const res = await fetch(`/api/polls/${id}/has-voted`, {
+        headers: {
+          'X-Fingerprint': browserFingerprint,
+        },
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to check vote status');
+      return res.json();
+    },
     select: (data): { hasVoted: boolean } => data as { hasVoted: boolean },
   });
 
   const voteMutation = useMutation({
     mutationFn: async (optionIds: string | string[]) => {
-      // Send appropriate request based on poll type
-      if (poll?.isMultipleChoice) {
-        // For multiple choice polls, send optionIds array
-        return await apiRequest("POST", `/api/polls/${id}/vote`, {
-          optionIds: Array.isArray(optionIds) ? optionIds : [optionIds]
-        });
-      } else {
-        // For single choice polls, send only optionId
-        return await apiRequest("POST", `/api/polls/${id}/vote`, {
-          optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds
-        });
+      // Send appropriate request based on poll type with browser fingerprint
+      const body = poll?.isMultipleChoice 
+        ? { optionIds: Array.isArray(optionIds) ? optionIds : [optionIds] }
+        : { optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds };
+      
+      const res = await fetch(`/api/polls/${id}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Fingerprint': browserFingerprint,
+        },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to submit vote');
       }
+      
+      return res.json();
     },
     onSuccess: () => {
       const isVoteChange = hasVoted?.hasVoted;

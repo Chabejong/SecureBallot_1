@@ -8,6 +8,44 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Voting System Bug Fix
+Fixed critical duplicate vote bug in single-choice polls:
+
+### Issue
+Users could vote twice in single-choice polls before the system blocked subsequent attempts, particularly noticeable on mobile devices with rapid clicks.
+
+### Root Cause
+- Backend wasn't extracting browser fingerprint from request headers
+- Frontend Vote.tsx component wasn't sending fingerprint in X-Fingerprint header
+- Created race condition where two quick clicks could both pass duplicate vote check
+
+### Solution Applied
+**Backend Changes (server/routes.ts):**
+- Added browser fingerprint extraction from X-Fingerprint header
+- Updated vote submission endpoint to include fingerprint in duplicate checking
+- Updated vote creation to store fingerprint in database
+- Updated has-voted endpoint to check fingerprint
+
+**Frontend Changes (client/src/pages/Vote.tsx):**
+- Added generateBrowserFingerprint() function (matches PublicVote.tsx implementation)
+- Modified vote mutation to send X-Fingerprint header
+- Modified has-voted query to send X-Fingerprint header
+
+### Verification
+Comprehensive e2e test confirmed:
+- Only one vote recorded despite rapid double-clicks
+- Subsequent vote attempts properly blocked with "Already Voted" message
+- Database unique constraints enforce one vote per device for anonymous polls
+
+## October 2025 - User Subscription Display
+Added subscription tier display to user profiles:
+
+### Implementation
+- Subscription tier shown as colored badge in user dropdown menu
+- Tier colors: Free (gray), Basic (blue), Standard (green), Premium (purple), Professional (indigo), Enterprise (orange), Ultimate (gold gradient)
+- Display appears in both desktop dropdown and mobile navigation menu
+- Backend payment handler updated to match new tier names (Premium €25, Professional €50, Enterprise €75, Ultimate €100)
+
 ## October 2025 - Admin User & Payment System Updates
 Latest updates to admin privileges and payment configuration:
 

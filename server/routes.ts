@@ -412,18 +412,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Robust user ID extraction (consistent with create poll route)
       const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
+      const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
 
       // For non-anonymous polls, ensure we have a valid userId
       if (!poll.isAnonymous && !userId) {
         return res.status(401).json({ message: "Valid user authentication required for non-anonymous polls" });
       }
 
-      // For non-anonymous polls, use userId only; for anonymous polls, use IP only
+      // For non-anonymous polls, use userId only; for anonymous polls, use IP + fingerprint
       const identifierUserId = poll.isAnonymous ? undefined : userId;
       const identifierIP = poll.isAnonymous ? ipAddress : undefined;
+      const identifierFingerprint = poll.isAnonymous ? browserFingerprint : undefined;
 
       // Check if user/IP already voted
-      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP);
+      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP, identifierFingerprint);
       if (hasVoted) {
         // Check if poll allows vote changes
         if (!poll.allowVoteChanges) {
@@ -443,6 +445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               optionId,
               voterId: identifierUserId,
               ipAddress: identifierIP,
+              browserFingerprint: identifierFingerprint?.substring(0, 255),
             };
             const vote = await storage.submitVote(voteData);
             votes.push(vote);
@@ -459,6 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             optionId: votingOptions[0],
             voterId: identifierUserId,
             ipAddress: identifierIP,
+            browserFingerprint: identifierFingerprint?.substring(0, 255),
           };
           
           const updatedVote = await storage.updateVote(pollId, updateVoteData, identifierUserId, identifierIP);
@@ -475,6 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             optionId,
             voterId: identifierUserId,
             ipAddress: identifierIP,
+            browserFingerprint: identifierFingerprint?.substring(0, 255),
           };
           const vote = await storage.submitVote(voteData);
           votes.push(vote);
@@ -490,6 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           optionId: votingOptions[0],
           voterId: identifierUserId,
           ipAddress: identifierIP,
+          browserFingerprint: identifierFingerprint?.substring(0, 255),
         };
 
         const vote = await storage.submitVote(voteData);
@@ -573,6 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pollId = req.params.id;
       const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
+      const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
       
       // Get poll to check if it's anonymous
       const poll = await storage.getPoll(pollId);
@@ -580,11 +587,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Poll not found" });
       }
       
-      // Use same logic as vote submission: for anonymous polls use IP, for non-anonymous use userId
+      // Use same logic as vote submission: for anonymous polls use IP + fingerprint, for non-anonymous use userId
       const identifierUserId = poll.isAnonymous ? undefined : userId;
       const identifierIP = poll.isAnonymous ? ipAddress : undefined;
+      const identifierFingerprint = poll.isAnonymous ? browserFingerprint : undefined;
       
-      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP);
+      const hasVoted = await storage.hasUserVoted(pollId, identifierUserId, identifierIP, identifierFingerprint);
       res.json({ hasVoted });
     } catch (error) {
       console.error("Error checking vote status:", error);
