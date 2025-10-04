@@ -114,13 +114,14 @@ export const votes = pgTable("votes", {
   browserFingerprint: varchar("browser_fingerprint"), // for duplicate prevention in anonymous voting
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
-  // Unique constraint for authenticated users - one vote per user per poll
-  userPollUnique: uniqueIndex("votes_user_poll_unique").on(table.pollId, table.voterId).where(sql`voter_id IS NOT NULL`),
-  // Unique constraint for anonymous users - one vote per IP+fingerprint combination (using coalesce to handle NULLs)
+  // Unique constraint for authenticated users - one vote per user per poll per option (allows multiple choice)
+  userPollOptionUnique: uniqueIndex("votes_user_poll_option_unique").on(table.pollId, table.voterId, table.optionId).where(sql`voter_id IS NOT NULL`),
+  // Unique constraint for anonymous users - one vote per IP+fingerprint per option (allows multiple choice)
   anonymousVoteUnique: uniqueIndex("votes_anonymous_unique").on(
     table.pollId, 
     sql`coalesce(${table.ipAddress}, '')`,
-    sql`coalesce(${table.browserFingerprint}, '')`
+    sql`coalesce(${table.browserFingerprint}, '')`,
+    table.optionId
   ).where(sql`voter_id IS NULL`),
   // Performance indexes
   pollIdIndex: index("votes_poll_id_idx").on(table.pollId),

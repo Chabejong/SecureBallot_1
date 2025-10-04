@@ -8,6 +8,28 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## October 2025 - Multiple Choice Voting Bug Fix
+Fixed database constraint issue preventing multiple choice poll submissions:
+
+### Issue
+Multiple choice polls failed when users tried to select multiple options. Database was rejecting the second vote with a unique constraint violation.
+
+### Root Cause
+Database unique constraints enforced "one vote per user per poll" but multiple choice polls require "one vote per user per poll per option" to allow users to select multiple options.
+
+### Solution Applied
+1. Updated authenticated user constraint from (pollId, voterId) to (pollId, voterId, optionId)
+2. Updated anonymous user constraint to include optionId: (pollId, coalesce(ipAddress,''), coalesce(browserFingerprint,''), optionId)
+3. This allows users to submit one vote per selected option in multiple choice polls
+4. Maintains security by preventing duplicate votes on the same option
+
+### Verification
+E2e test confirmed:
+- User can successfully select multiple options (e.g., Option A and Option C)
+- Both votes are recorded in database (vote_count = 2)
+- UI correctly displays results showing votes for each selected option
+- Single choice polls continue to work normally
+
 ## October 2025 - Critical Security Fix: Duplicate Vote Vulnerability
 Fixed critical vulnerability allowing multiple votes from the same device:
 
