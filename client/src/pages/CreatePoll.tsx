@@ -528,6 +528,14 @@ export default function CreatePoll() {
                   />
                   
                   <div className="flex flex-col justify-end space-y-4">
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
+                      <p className="font-medium mb-1">💡 To create a public poll:</p>
+                      <ol className="list-decimal list-inside space-y-1 ml-2">
+                        <li>Select "Anonymous voting."</li>
+                        <li>Check the box for "Enable anonymous voting (anyone with the link can vote without signing in)."</li>
+                      </ol>
+                    </div>
+
                     <FormField
                       control={form.control}
                       name="isAnonymous"
