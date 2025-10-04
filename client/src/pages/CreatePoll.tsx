@@ -32,7 +32,7 @@ const createPollSchema = z.object({
   description: z.string().optional(),
   pollType: z.enum(["public", "members", "invited"]).default("public"),
   isAnonymous: z.boolean().default(true),
-  allowVoteChanges: z.boolean().default(true),
+  allowVoteChanges: z.boolean().default(false),
   isMultipleChoice: z.boolean().default(false),
   isPublicShareable: z.boolean().default(false),
   endDate: z.string().optional().refine((val) => val && val.length > 0, "End date is required"),
@@ -58,7 +58,7 @@ export default function CreatePoll() {
       description: "",
       pollType: "public",
       isAnonymous: true,
-      allowVoteChanges: true,
+      allowVoteChanges: false,
       isMultipleChoice: false,
       isPublicShareable: false,
       endDate: "",
@@ -577,26 +577,6 @@ export default function CreatePoll() {
                               </Button>
                             </div>
                           </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    
-                    <FormField
-                      control={form.control}
-                      name="allowVoteChanges"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              data-testid="checkbox-allow-vote-changes"
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">
-                            Allow voters to change their vote
-                          </FormLabel>
                         </FormItem>
                       )}
                     />
