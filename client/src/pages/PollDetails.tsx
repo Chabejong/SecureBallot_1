@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { isUnauthorizedError } from "@/lib/authUtils";
 import { format } from "date-fns";
-import { Vote, BarChart3, Clock, Users, Shield, User, CheckCircle, AlertCircle } from "lucide-react";
+import { Vote, BarChart3, Clock, Users, Shield, User, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
 export default function PollDetails() {
   const { id } = useParams();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: poll, isLoading } = useQuery({
     queryKey: [`/api/polls/${id}`],
@@ -26,6 +32,46 @@ export default function PollDetails() {
     enabled: !!id,
     select: (data): { hasVoted: boolean } => data as { hasVoted: boolean },
   });
+
+  const deletePollMutation = useMutation({
+    mutationFn: async (pollId: string) => {
+      return await apiRequest("DELETE", `/api/polls/${pollId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Poll deleted successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/polls"] });
+      // Redirect to home after successful deletion
+      setLocation("/");
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete poll. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this poll? This action cannot be undone.")) {
+      deletePollMutation.mutate(id!);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -176,6 +222,19 @@ export default function PollDetails() {
               View Results
             </Button>
           </Link>
+
+          {isOwner && (
+            <Button 
+              variant="destructive" 
+              size="lg" 
+              onClick={handleDelete}
+              disabled={deletePollMutation.isPending}
+              data-testid="button-delete-poll"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {deletePollMutation.isPending ? "Deleting..." : "Delete Poll"}
+            </Button>
+          )}
         </div>
 
         {/* Poll Options Preview */}
