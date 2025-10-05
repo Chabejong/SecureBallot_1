@@ -11,6 +11,15 @@ import { sendPasswordResetEmail } from "./emailService";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
+import { 
+  hashFingerprint, 
+  validateVoteToken, 
+  deserializeVoteToken,
+  checkRateLimit,
+  validateBehavior,
+  validateTiming,
+  type VoteToken 
+} from "./voteValidation";
 
 const createPollWithOptionsSchema = insertPollSchema.extend({
   options: z.array(z.object({
@@ -370,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/polls/:id/vote', async (req: any, res) => {
     try {
       const pollId = req.params.id;
-      const { optionId, optionIds } = req.body;
+      const { optionId, optionIds, voteToken, timeOnPage } = req.body;
       
       const votingOptions = optionIds || [optionId];
       if (!votingOptions || votingOptions.length === 0) {
@@ -409,14 +418,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid option(s) selected" });
       }
 
-      // Robust user ID extraction (consistent with create poll route)
+      // Extract user identification information
       const userId = req.isAuthenticated() ? req.user?.id : undefined;
       const ipAddress = req.ip || req.connection.remoteAddress;
       const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
+      const hashedFp = browserFingerprint ? hashFingerprint(browserFingerprint.toString()) : undefined;
 
       // For non-anonymous polls, ensure we have a valid userId
       if (!poll.isAnonymous && !userId) {
         return res.status(401).json({ message: "Valid user authentication required for non-anonymous polls" });
+      }
+
+      // Rate limiting check for anonymous polls
+      if (poll.isAnonymous && ipAddress) {
+        const attempt = await storage.getVoteAttempt(pollId, ipAddress.toString(), hashedFp);
+        const rateLimitResult = checkRateLimit(attempt || null);
+        
+        if (!rateLimitResult.allowed) {
+          return res.status(429).json({ 
+            message: rateLimitResult.reason || "Too many voting attempts",
+            resetAt: rateLimitResult.resetAt 
+          });
+        }
+
+        await storage.incrementVoteAttempt(pollId, ipAddress.toString(), hashedFp);
+      }
+
+      // Validate vote token if provided
+      if (voteToken) {
+        const token = deserializeVoteToken(voteToken);
+        if (!token) {
+          return res.status(400).json({ message: "Invalid vote token format" });
+        }
+
+        const tokenValidation = validateVoteToken(token);
+        if (!tokenValidation.valid) {
+          return res.status(400).json({ message: tokenValidation.reason || "Invalid vote token" });
+        }
+      }
+
+      // Behavioral validation
+      const behaviorValidation = validateBehavior(timeOnPage);
+      if (!behaviorValidation.valid) {
+        return res.status(400).json({ message: behaviorValidation.reason || "Please review the poll before voting" });
+      }
+
+      // Timing validation
+      const timingValidation = validateTiming(timeOnPage, null);
+      if (!timingValidation.valid) {
+        return res.status(400).json({ message: timingValidation.reason || "Please wait before voting" });
       }
 
       // For non-anonymous polls, use userId only; for anonymous polls, use IP + fingerprint
@@ -446,9 +496,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               voterId: identifierUserId,
               ipAddress: identifierIP,
               browserFingerprint: identifierFingerprint?.substring(0, 255),
+              hashedFingerprint: hashedFp || null,
+              voteToken: voteToken || null,
+              timeOnPage: timeOnPage || null,
             };
             const vote = await storage.submitVote(voteData);
             votes.push(vote);
+          }
+          
+          // Reset rate limit attempt on successful vote
+          if (poll.isAnonymous && ipAddress) {
+            await storage.resetVoteAttempt(pollId, ipAddress.toString(), hashedFp);
           }
           
           return res.status(200).json({ 
@@ -463,9 +521,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             voterId: identifierUserId,
             ipAddress: identifierIP,
             browserFingerprint: identifierFingerprint?.substring(0, 255),
+            hashedFingerprint: hashedFp || null,
+            voteToken: voteToken || null,
+            timeOnPage: timeOnPage || null,
           };
           
           const updatedVote = await storage.updateVote(pollId, updateVoteData, identifierUserId, identifierIP);
+          
+          // Reset rate limit attempt on successful vote
+          if (poll.isAnonymous && ipAddress) {
+            await storage.resetVoteAttempt(pollId, ipAddress.toString(), hashedFp);
+          }
+          
           return res.status(200).json({ message: "Vote updated successfully", voteId: updatedVote.id });
         }
       }
@@ -480,9 +547,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             voterId: identifierUserId,
             ipAddress: identifierIP,
             browserFingerprint: identifierFingerprint?.substring(0, 255),
+            hashedFingerprint: hashedFp || null,
+            voteToken: voteToken || null,
+            timeOnPage: timeOnPage || null,
           };
           const vote = await storage.submitVote(voteData);
           votes.push(vote);
+        }
+        
+        // Reset rate limit attempt on successful vote
+        if (poll.isAnonymous && ipAddress) {
+          await storage.resetVoteAttempt(pollId, ipAddress.toString(), hashedFp);
         }
         
         res.status(201).json({ 
@@ -496,9 +571,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           voterId: identifierUserId,
           ipAddress: identifierIP,
           browserFingerprint: identifierFingerprint?.substring(0, 255),
+          hashedFingerprint: hashedFp || null,
+          voteToken: voteToken || null,
+          timeOnPage: timeOnPage || null,
         };
 
         const vote = await storage.submitVote(voteData);
+        
+        // Reset rate limit attempt on successful vote
+        if (poll.isAnonymous && ipAddress) {
+          await storage.resetVoteAttempt(pollId, ipAddress.toString(), hashedFp);
+        }
+        
         res.status(201).json({ message: "Vote submitted successfully", voteId: vote.id });
       }
     } catch (error: any) {

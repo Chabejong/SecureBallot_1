@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Header } from "@/components/Header";
@@ -11,35 +11,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { AlertCircle, CheckCircle, Shield } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
-
-// Generate a unique browser fingerprint for anonymous vote tracking
-const generateBrowserFingerprint = (): string => {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillText('Browser fingerprint', 2, 2);
-  }
-  
-  const fingerprint = [
-    navigator.userAgent,
-    navigator.language,
-    screen.width + 'x' + screen.height,
-    new Date().getTimezoneOffset(),
-    canvas.toDataURL(),
-    navigator.hardwareConcurrency || 'unknown',
-  ].join('|');
-  
-  // Create a simple hash
-  let hash = 0;
-  for (let i = 0; i < fingerprint.length; i++) {
-    const char = fingerprint.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString(36);
-};
+import { generateEnhancedFingerprint } from "@/lib/fingerprint";
+import { voteStorage } from "@/lib/voteStorage";
+import { generateVoteToken, serializeVoteToken } from "@/lib/voteToken";
 
 export default function Vote() {
   const { id } = useParams();
@@ -48,9 +22,18 @@ export default function Vote() {
   const queryClient = useQueryClient();
   const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pageLoadTime] = useState(Date.now());
+  const [browserFingerprint, setBrowserFingerprint] = useState<string>("");
   
-  // Generate browser fingerprint once per component mount
-  const browserFingerprint = useMemo(() => generateBrowserFingerprint(), []);
+  // Initialize enhanced fingerprint and vote storage
+  useEffect(() => {
+    const init = async () => {
+      const fingerprint = await generateEnhancedFingerprint();
+      setBrowserFingerprint(fingerprint);
+      await voteStorage.init();
+    };
+    init();
+  }, []);
 
   const { data: poll, isLoading } = useQuery({
     queryKey: [`/api/polls/${id}`],
@@ -76,10 +59,27 @@ export default function Vote() {
 
   const voteMutation = useMutation({
     mutationFn: async (optionIds: string | string[]) => {
+      if (!id) throw new Error('Poll ID is required');
+      
+      // Calculate time on page
+      const timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000);
+      
+      // Generate vote token
+      const token = await generateVoteToken(id, browserFingerprint);
+      const serializedToken = serializeVoteToken(token);
+      
       // Send appropriate request based on poll type with browser fingerprint
       const body = poll?.isMultipleChoice 
-        ? { optionIds: Array.isArray(optionIds) ? optionIds : [optionIds] }
-        : { optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds };
+        ? { 
+            optionIds: Array.isArray(optionIds) ? optionIds : [optionIds],
+            voteToken: serializedToken,
+            timeOnPage,
+          }
+        : { 
+            optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds,
+            voteToken: serializedToken,
+            timeOnPage,
+          };
       
       const res = await fetch(`/api/polls/${id}/vote`, {
         method: 'POST',
@@ -111,8 +111,15 @@ export default function Vote() {
       // Return context with snapshot for use in onSuccess and onError
       return { previousHasVoted };
     },
-    onSuccess: async (_data, _variables, context) => {
+    onSuccess: async (_data, variables, context) => {
       const isVoteChange = context?.previousHasVoted?.hasVoted ?? false;
+      
+      // Record vote in client-side storage
+      if (id) {
+        const optionIds = Array.isArray(variables) ? variables : [variables];
+        await voteStorage.recordVote(id, browserFingerprint, optionIds as string[]);
+      }
+      
       toast({
         title: isVoteChange ? "Vote Updated" : "Vote Submitted",
         description: isVoteChange 

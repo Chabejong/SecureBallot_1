@@ -3,6 +3,7 @@ import {
   polls,
   pollOptions,
   votes,
+  voteAttempts,
   type User,
   type UpsertUser,
   type Poll,
@@ -11,6 +12,8 @@ import {
   type InsertPollOption,
   type Vote,
   type InsertVote,
+  type VoteAttempt,
+  type InsertVoteAttempt,
   type PollWithDetails,
   type PollWithResults,
 } from "@shared/schema";
@@ -59,6 +62,13 @@ export interface IStorage {
   
   // Admin operations
   setAdminStatus(email: string, isAdmin: boolean): Promise<void>;
+  
+  // Rate limiting operations
+  getVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<VoteAttempt | undefined>;
+  recordVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void>;
+  incrementVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void>;
+  resetVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void>;
+  cleanupOldAttempts(cutoffDate: Date): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -525,6 +535,91 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(users.email, email));
+  }
+
+  // Rate limiting operations
+  async getVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<VoteAttempt | undefined> {
+    const whereCondition = hashedFingerprint
+      ? and(
+          eq(voteAttempts.pollId, pollId),
+          eq(voteAttempts.ipAddress, ipAddress),
+          eq(voteAttempts.hashedFingerprint, hashedFingerprint)
+        )
+      : and(
+          eq(voteAttempts.pollId, pollId),
+          eq(voteAttempts.ipAddress, ipAddress)
+        );
+
+    const [attempt] = await db
+      .select()
+      .from(voteAttempts)
+      .where(whereCondition);
+
+    return attempt;
+  }
+
+  async recordVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void> {
+    const attemptData: InsertVoteAttempt = {
+      pollId,
+      ipAddress,
+      hashedFingerprint: hashedFingerprint || null,
+      attemptCount: 1,
+    };
+
+    await db
+      .insert(voteAttempts)
+      .values(attemptData)
+      .onConflictDoNothing();
+  }
+
+  async incrementVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void> {
+    const existing = await this.getVoteAttempt(pollId, ipAddress, hashedFingerprint);
+    
+    if (existing) {
+      const whereCondition = hashedFingerprint
+        ? and(
+            eq(voteAttempts.pollId, pollId),
+            eq(voteAttempts.ipAddress, ipAddress),
+            eq(voteAttempts.hashedFingerprint, hashedFingerprint)
+          )
+        : and(
+            eq(voteAttempts.pollId, pollId),
+            eq(voteAttempts.ipAddress, ipAddress)
+          );
+
+      await db
+        .update(voteAttempts)
+        .set({
+          attemptCount: existing.attemptCount + 1,
+          lastAttemptAt: new Date(),
+        })
+        .where(whereCondition);
+    } else {
+      await this.recordVoteAttempt(pollId, ipAddress, hashedFingerprint);
+    }
+  }
+
+  async resetVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void> {
+    const whereCondition = hashedFingerprint
+      ? and(
+          eq(voteAttempts.pollId, pollId),
+          eq(voteAttempts.ipAddress, ipAddress),
+          eq(voteAttempts.hashedFingerprint, hashedFingerprint)
+        )
+      : and(
+          eq(voteAttempts.pollId, pollId),
+          eq(voteAttempts.ipAddress, ipAddress)
+        );
+
+    await db.delete(voteAttempts).where(whereCondition);
+  }
+
+  async cleanupOldAttempts(cutoffDate: Date): Promise<number> {
+    const result = await db
+      .delete(voteAttempts)
+      .where(lt(voteAttempts.lastAttemptAt, cutoffDate));
+    
+    return result.rowCount || 0;
   }
 }
 

@@ -112,6 +112,9 @@ export const votes = pgTable("votes", {
   voterId: varchar("voter_id").references(() => users.id), // null for anonymous votes
   ipAddress: varchar("ip_address", { length: 45 }), // for tracking without user ID
   browserFingerprint: varchar("browser_fingerprint"), // for duplicate prevention in anonymous voting
+  hashedFingerprint: varchar("hashed_fingerprint", { length: 64 }), // SHA-256 hash of enhanced fingerprint
+  voteToken: text("vote_token"), // cryptographic token for vote validation
+  timeOnPage: integer("time_on_page"), // seconds spent on page before voting (behavioral validation)
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
   // Unique constraint for authenticated users - one vote per user per poll per option (allows multiple choice)
@@ -127,8 +130,44 @@ export const votes = pgTable("votes", {
   pollIdIndex: index("votes_poll_id_idx").on(table.pollId),
   voterIdIndex: index("votes_voter_id_idx").on(table.voterId),
   optionIdIndex: index("votes_option_id_idx").on(table.optionId),
+  hashedFingerprintIndex: index("votes_hashed_fingerprint_idx").on(table.hashedFingerprint),
   // Composite index for vote aggregation
   pollOptionIndex: index("votes_poll_option_idx").on(table.pollId, table.optionId),
+}));
+
+// Rate limiting table for vote attempts
+export const voteAttempts = pgTable("vote_attempts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  ipAddress: varchar("ip_address", { length: 45 }).notNull(),
+  hashedFingerprint: varchar("hashed_fingerprint", { length: 64 }).notNull().default(''),
+  attemptCount: integer("attempt_count").notNull().default(1),
+  lastAttemptAt: timestamp("last_attempt_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Composite unique index for IP + fingerprint per poll
+  ipFingerprintPollUnique: uniqueIndex("vote_attempts_unique").on(
+    table.pollId,
+    table.ipAddress,
+    table.hashedFingerprint
+  ),
+  // Index for cleanup queries
+  lastAttemptIndex: index("vote_attempts_last_attempt_idx").on(table.lastAttemptAt),
+  // Index for poll lookups
+  pollIdIndex: index("vote_attempts_poll_id_idx").on(table.pollId),
+}));
+
+// Used vote tokens table for replay protection
+export const usedVoteTokens = pgTable("used_vote_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  tokenNonce: varchar("token_nonce", { length: 32 }).notNull().unique(),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  usedAt: timestamp("used_at").defaultNow(),
+}, (table) => ({
+  // Index for nonce lookups
+  nonceIndex: index("used_vote_tokens_nonce_idx").on(table.tokenNonce),
+  // Index for cleanup queries
+  usedAtIndex: index("used_vote_tokens_used_at_idx").on(table.usedAt),
 }));
 
 // User groups table for targeting polls to specific user segments
@@ -213,6 +252,13 @@ export const votesRelations = relations(votes, ({ one }) => ({
   }),
 }));
 
+export const voteAttemptsRelations = relations(voteAttempts, ({ one }) => ({
+  poll: one(polls, {
+    fields: [voteAttempts.pollId],
+    references: [polls.id],
+  }),
+}));
+
 export const paymentTransactionsRelations = relations(paymentTransactions, ({ one }) => ({
   user: one(users, {
     fields: [paymentTransactions.userId],
@@ -290,6 +336,17 @@ export const insertPollTargetGroupSchema = createInsertSchema(pollTargetGroups).
   createdAt: true,
 });
 
+export const insertVoteAttemptSchema = createInsertSchema(voteAttempts).omit({
+  id: true,
+  createdAt: true,
+  lastAttemptAt: true,
+});
+
+export const insertUsedVoteTokenSchema = createInsertSchema(usedVoteTokens).omit({
+  id: true,
+  usedAt: true,
+});
+
 // Insert schemas for users
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -340,6 +397,10 @@ export type UserGroup = typeof userGroups.$inferSelect;
 export type InsertUserGroup = z.infer<typeof insertUserGroupSchema>;
 export type PollTargetGroup = typeof pollTargetGroups.$inferSelect;
 export type InsertPollTargetGroup = z.infer<typeof insertPollTargetGroupSchema>;
+export type VoteAttempt = typeof voteAttempts.$inferSelect;
+export type InsertVoteAttempt = z.infer<typeof insertVoteAttemptSchema>;
+export type UsedVoteToken = typeof usedVoteTokens.$inferSelect;
+export type InsertUsedVoteToken = z.infer<typeof insertUsedVoteTokenSchema>;
 
 // Extended types for queries
 export type PollWithDetails = Poll & {
