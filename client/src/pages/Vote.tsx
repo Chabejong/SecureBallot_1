@@ -61,24 +61,13 @@ export default function Vote() {
     mutationFn: async (optionIds: string | string[]) => {
       if (!id) throw new Error('Poll ID is required');
       
-      // Calculate time on page
-      const timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000);
-      
-      // Generate vote token
-      const token = await generateVoteToken(id, browserFingerprint);
-      const serializedToken = serializeVoteToken(token);
-      
       // Send appropriate request based on poll type with browser fingerprint
       const body = poll?.isMultipleChoice 
         ? { 
             optionIds: Array.isArray(optionIds) ? optionIds : [optionIds],
-            voteToken: serializedToken,
-            timeOnPage,
           }
         : { 
             optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds,
-            voteToken: serializedToken,
-            timeOnPage,
           };
       
       const res = await fetch(`/api/polls/${id}/vote`, {

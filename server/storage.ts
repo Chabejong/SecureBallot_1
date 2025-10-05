@@ -562,7 +562,7 @@ export class DatabaseStorage implements IStorage {
     const attemptData: InsertVoteAttempt = {
       pollId,
       ipAddress,
-      hashedFingerprint: hashedFingerprint || null,
+      hashedFingerprint: hashedFingerprint || '',
       attemptCount: 1,
     };
 
