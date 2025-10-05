@@ -331,31 +331,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hasUserVoted(pollId: string, userId?: string, ipAddress?: string, browserFingerprint?: string): Promise<boolean> {
-    let whereCondition;
-    
     if (userId) {
-      // Authenticated user - check by user ID
-      whereCondition = and(eq(votes.pollId, pollId), eq(votes.voterId, userId));
-    } else if (browserFingerprint && ipAddress) {
-      // Anonymous user - check by both IP and browser fingerprint for more reliable detection
-      whereCondition = and(
-        eq(votes.pollId, pollId), 
-        eq(votes.ipAddress, ipAddress),
-        eq(votes.browserFingerprint, browserFingerprint)
-      );
-    } else if (ipAddress) {
-      // Fallback to IP only if no fingerprint available
-      whereCondition = and(eq(votes.pollId, pollId), eq(votes.ipAddress, ipAddress));
-    } else {
-      return false;
+      // Authenticated user - check by user ID only
+      const [result] = await db
+        .select({ count: count() })
+        .from(votes)
+        .where(and(eq(votes.pollId, pollId), eq(votes.voterId, userId)));
+      return result.count > 0;
+    } 
+    
+    if (browserFingerprint) {
+      // Anonymous user with fingerprint - check by fingerprint only
+      // This handles mobile networks where IP changes frequently
+      const [result] = await db
+        .select({ count: count() })
+        .from(votes)
+        .where(and(
+          eq(votes.pollId, pollId), 
+          eq(votes.browserFingerprint, browserFingerprint)
+        ));
+      return result.count > 0;
     }
-
-    const [result] = await db
-      .select({ count: count() })
-      .from(votes)
-      .where(whereCondition);
-
-    return result.count > 0;
+    
+    if (ipAddress) {
+      // Fallback to IP only if no fingerprint available
+      const [result] = await db
+        .select({ count: count() })
+        .from(votes)
+        .where(and(eq(votes.pollId, pollId), eq(votes.ipAddress, ipAddress)));
+      return result.count > 0;
+    }
+    
+    return false;
   }
 
   async getPollResults(pollId: string): Promise<PollWithResults | undefined> {
