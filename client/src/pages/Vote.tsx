@@ -42,8 +42,8 @@ export default function Vote() {
   });
 
   const { data: hasVoted } = useQuery({
-    queryKey: [`/api/polls/${id}/has-voted`],
-    enabled: !!id,
+    queryKey: [`/api/polls/${id}/has-voted`, browserFingerprint],
+    enabled: !!id && !!browserFingerprint,
     queryFn: async () => {
       const res = await fetch(`/api/polls/${id}/has-voted`, {
         headers: {

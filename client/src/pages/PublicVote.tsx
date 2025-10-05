@@ -70,8 +70,8 @@ export default function PublicVote() {
   });
 
   const { data: hasVotedData } = useQuery({
-    queryKey: [`/api/public/polls/${params?.slug}/has-voted`],
-    enabled: !!params?.slug,
+    queryKey: [`/api/public/polls/${params?.slug}/has-voted`, browserFingerprint],
+    enabled: !!params?.slug && !!browserFingerprint,
     queryFn: async () => {
       const response = await fetch(`/api/public/polls/${params?.slug}/has-voted`, {
         headers: {

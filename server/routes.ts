@@ -737,6 +737,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ipAddress = req.ip || req.connection.remoteAddress;
       const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
       
+      console.log('[PUBLIC VOTE]', {
+        ipAddress,
+        fingerprintHeader: req.headers['x-fingerprint'],
+        finalFingerprint: browserFingerprint ? browserFingerprint.substring(0, 50) : 'none'
+      });
+      
       // Check if this device already voted (using IP + browser fingerprint)
       const hasVoted = await storage.hasUserVoted(poll.id, undefined, ipAddress, browserFingerprint);
       if (hasVoted) {
