@@ -8,16 +8,29 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## October 12, 2025 - Fixed Authentication Number Input Issue
-- **Issue**: Authentication number input field on shared poll links (PublicVote page) was not accepting user input
-- **Root Cause**: PublicVote.tsx component was missing authNumber state and not passing authNumber/onAuthNumberChange props to VotingInterface component
-- **Fix Applied**:
+## October 12, 2025 - Fixed Authentication Number and Voting Flow Issues
+
+### Issue 1: Authentication Number Input Not Working on Shared Links
+- **Problem**: Authentication number input field on shared poll links was not accepting user input
+- **Root Cause**: PublicVote.tsx was missing authNumber state and props
+- **Fix**:
   - Added authNumber state to PublicVote.tsx
-  - Updated PublicVote to pass authNumber and onAuthNumberChange props to VotingInterface
-  - Updated vote submission in PublicVote to include authNumber in request body
-  - Improved input handling to use .replace(/\D/g, '') for digit-only validation across all voting pages
-  - Changed API endpoint in Vote.tsx from /api/polls/:id to /api/public/polls/:slug for public poll access
-- **Impact**: Users can now successfully enter authentication numbers on shared poll links and QR codes, enabling full Members-Only poll functionality via public access
+  - Passed authNumber/onAuthNumberChange props to VotingInterface
+  - Included authNumber in vote submission payload
+  - Improved input handling with .replace(/\D/g, '') for digit-only validation
+
+### Issue 2: "Poll Not Found" Error for Logged-in Users
+- **Problem**: Logged-in users saw "Poll Not Found" when trying to vote
+- **Root Cause**: Vote.tsx was incorrectly using `/api/public/polls/:id` with a UUID instead of slug
+- **Fix**:
+  - Reverted Vote.tsx to use `/api/polls/:id` (authenticated endpoint with UUID)
+  - PublicVote.tsx correctly uses `/api/public/polls/:slug` (public endpoint with slug)
+
+### Routing Structure
+- `/vote/:slug` → PublicVote.tsx (shared links, uses slug)
+- `/poll/:id/vote` → Vote.tsx (logged-in users, uses UUID)
+
+**Impact**: Both shared link voting and authenticated user voting now work correctly with full Members-Only authentication number support
 
 # System Architecture
 
