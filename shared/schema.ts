@@ -77,6 +77,8 @@ export const polls = pgTable("polls", {
   isPublicShareable: boolean("is_public_shareable").notNull().default(false), // for anonymous voting via shareable links
   shareableSlug: varchar("shareable_slug", { length: 50 }).unique(), // unique identifier for shareable links
   endDate: timestamp("end_date").notNull(),
+  authNumberStart: integer("auth_number_start"), // for members-only polls with unique number authentication
+  authNumberEnd: integer("auth_number_end"), // for members-only polls with unique number authentication
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -210,6 +212,24 @@ export const pollTargetGroups = pgTable("poll_target_groups", {
   groupIdIndex: index("poll_target_groups_group_id_idx").on(table.groupId),
 }));
 
+// Authentication numbers table for members-only polls
+export const pollAuthNumbers = pgTable("poll_auth_numbers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  authNumber: integer("auth_number").notNull(),
+  isUsed: boolean("is_used").notNull().default(false),
+  usedAt: timestamp("used_at"),
+  usedByVoteId: varchar("used_by_vote_id").references(() => votes.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Unique constraint - each auth number can only exist once per poll
+  pollAuthNumberUnique: uniqueIndex("poll_auth_numbers_unique").on(table.pollId, table.authNumber),
+  // Index for poll lookups
+  pollIdIndex: index("poll_auth_numbers_poll_id_idx").on(table.pollId),
+  // Index for checking used/unused numbers
+  isUsedIndex: index("poll_auth_numbers_is_used_idx").on(table.pollId, table.isUsed),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   polls: many(polls),
@@ -227,6 +247,7 @@ export const pollsRelations = relations(polls, ({ one, many }) => ({
   options: many(pollOptions),
   votes: many(votes),
   targetGroups: many(pollTargetGroups),
+  authNumbers: many(pollAuthNumbers),
 }));
 
 export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
@@ -237,7 +258,7 @@ export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
   votes: many(votes),
 }));
 
-export const votesRelations = relations(votes, ({ one }) => ({
+export const votesRelations = relations(votes, ({ one, many }) => ({
   poll: one(polls, {
     fields: [votes.pollId],
     references: [polls.id],
@@ -250,6 +271,7 @@ export const votesRelations = relations(votes, ({ one }) => ({
     fields: [votes.voterId],
     references: [users.id],
   }),
+  authNumbers: many(pollAuthNumbers),
 }));
 
 export const voteAttemptsRelations = relations(voteAttempts, ({ one }) => ({
@@ -294,6 +316,17 @@ export const pollTargetGroupsRelations = relations(pollTargetGroups, ({ one }) =
   group: one(groups, {
     fields: [pollTargetGroups.groupId],
     references: [groups.id],
+  }),
+}));
+
+export const pollAuthNumbersRelations = relations(pollAuthNumbers, ({ one }) => ({
+  poll: one(polls, {
+    fields: [pollAuthNumbers.pollId],
+    references: [polls.id],
+  }),
+  usedByVote: one(votes, {
+    fields: [pollAuthNumbers.usedByVoteId],
+    references: [votes.id],
   }),
 }));
 
@@ -344,6 +377,12 @@ export const insertVoteAttemptSchema = createInsertSchema(voteAttempts).omit({
 
 export const insertUsedVoteTokenSchema = createInsertSchema(usedVoteTokens).omit({
   id: true,
+  usedAt: true,
+});
+
+export const insertPollAuthNumberSchema = createInsertSchema(pollAuthNumbers).omit({
+  id: true,
+  createdAt: true,
   usedAt: true,
 });
 
@@ -401,6 +440,8 @@ export type VoteAttempt = typeof voteAttempts.$inferSelect;
 export type InsertVoteAttempt = z.infer<typeof insertVoteAttemptSchema>;
 export type UsedVoteToken = typeof usedVoteTokens.$inferSelect;
 export type InsertUsedVoteToken = z.infer<typeof insertUsedVoteTokenSchema>;
+export type PollAuthNumber = typeof pollAuthNumbers.$inferSelect;
+export type InsertPollAuthNumber = z.infer<typeof insertPollAuthNumberSchema>;
 
 // Extended types for queries
 export type PollWithDetails = Poll & {
