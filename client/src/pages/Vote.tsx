@@ -21,6 +21,7 @@ export default function Vote() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
+  const [authNumber, setAuthNumber] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pageLoadTime] = useState(Date.now());
   const [browserFingerprint, setBrowserFingerprint] = useState<string>("");
@@ -65,9 +66,11 @@ export default function Vote() {
       const body = poll?.isMultipleChoice 
         ? { 
             optionIds: Array.isArray(optionIds) ? optionIds : [optionIds],
+            authNumber: authNumber ? parseInt(authNumber) : undefined,
           }
         : { 
             optionId: Array.isArray(optionIds) ? optionIds[0] : optionIds,
+            authNumber: authNumber ? parseInt(authNumber) : undefined,
           };
       
       const res = await fetch(`/api/polls/${id}/vote`, {
@@ -301,6 +304,8 @@ export default function Vote() {
           onVote={handleVote}
           isSubmitting={isSubmitting || voteMutation.isPending}
           hasVoted={hasVoted?.hasVoted}
+          authNumber={authNumber}
+          onAuthNumberChange={setAuthNumber}
         />
 
         {/* Security Notice */}

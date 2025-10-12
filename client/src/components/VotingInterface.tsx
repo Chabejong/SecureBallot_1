@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
-import { Vote, Clock, Users, Lock } from "lucide-react";
+import { Vote, Clock, Users, Lock, Key } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
 interface VotingInterfaceProps {
@@ -11,6 +12,8 @@ interface VotingInterfaceProps {
   onVote: () => void;
   isSubmitting: boolean;
   hasVoted?: boolean;
+  authNumber?: string;
+  onAuthNumberChange?: (value: string) => void;
 }
 
 export function VotingInterface({ 
@@ -19,9 +22,12 @@ export function VotingInterface({
   onOptionSelect, 
   onVote, 
   isSubmitting,
-  hasVoted = false
+  hasVoted = false,
+  authNumber = "",
+  onAuthNumberChange
 }: VotingInterfaceProps) {
   const endTime = format(new Date(poll.endDate), "MMMM d, h:mm a");
+  const requiresAuthNumber = poll.pollType === "members" && poll.authNumberStart !== null && poll.authNumberStart !== undefined && poll.authNumberEnd !== null && poll.authNumberEnd !== undefined;
 
   return (
     <Card className="shadow-lg">
@@ -136,14 +142,37 @@ export function VotingInterface({
           })}
         </div>
 
+        {/* Authentication Number - Only for Members Only polls */}
+        {requiresAuthNumber && (
+          <div className="mb-6 p-4 bg-primary/5 border border-primary/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <Key className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-foreground">Authentication Number Required</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Enter your unique authentication number to vote. This number can only be used once.
+            </p>
+            <Input
+              type="number"
+              placeholder={`Enter number between ${poll.authNumberStart} and ${poll.authNumberEnd}`}
+              value={authNumber}
+              onChange={(e) => onAuthNumberChange?.(e.target.value)}
+              disabled={isSubmitting}
+              className="max-w-md"
+              data-testid="input-auth-number"
+            />
+          </div>
+        )}
+
         {/* Voting Actions */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={onVote}
             disabled={
-              poll.isMultipleChoice 
+              (poll.isMultipleChoice 
                 ? (!Array.isArray(selectedOptionId) || selectedOptionId.length === 0) || isSubmitting
-                : !selectedOptionId || isSubmitting
+                : !selectedOptionId || isSubmitting) ||
+              (requiresAuthNumber && !authNumber)
             }
             className="flex-1"
             size="lg"
