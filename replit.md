@@ -8,7 +8,7 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## October 12, 2025 - Fixed Authentication Number and Voting Flow Issues
+## October 12, 2025 - Fixed Authentication Number Validation Issues
 
 ### Issue 1: Authentication Number Input Not Working on Shared Links
 - **Problem**: Authentication number input field on shared poll links was not accepting user input
@@ -26,11 +26,30 @@ Preferred communication style: Simple, everyday language.
   - Reverted Vote.tsx to use `/api/polls/:id` (authenticated endpoint with UUID)
   - PublicVote.tsx correctly uses `/api/public/polls/:slug` (public endpoint with slug)
 
+### Issue 3: No Backend Validation on Public Vote Endpoint (CRITICAL SECURITY FIX)
+- **Problem**: Public vote endpoint completely bypassed authentication number validation - users could vote with ANY number (1, 999, -5, etc.)
+- **Root Cause**: `/api/public/polls/:slug/vote` endpoint was missing all authentication number validation logic
+- **Fix Applied**:
+  1. Extract authNumber from request body
+  2. Check if poll requires auth number (Members-Only with range)
+  3. Validate auth number is provided
+  4. Validate it's a valid integer
+  5. Validate it's within range via storage.validateAuthNumber()
+  6. Validate it hasn't been used already
+  7. Mark auth number as used after successful vote
+  8. Prevent vote changes for Members-Only polls
+- **Validation Enforced**:
+  - ❌ Missing auth number → Error: "Authentication number is required for this poll"
+  - ❌ Invalid format → Error: "Invalid authentication number"
+  - ❌ Number outside range → Error: "Invalid authentication number. Please enter a number within the valid range."
+  - ❌ Already used number → Error: "This authentication number has already been used. Each number can only be used once."
+  - ✅ Valid unused number → Vote succeeds, number marked as used
+
 ### Routing Structure
 - `/vote/:slug` → PublicVote.tsx (shared links, uses slug)
 - `/poll/:id/vote` → Vote.tsx (logged-in users, uses UUID)
 
-**Impact**: Both shared link voting and authenticated user voting now work correctly with full Members-Only authentication number support
+**Impact**: Full Members-Only authentication number security now enforced on all voting endpoints, preventing unauthorized votes and ensuring each number can only be used once per poll
 
 # System Architecture
 
