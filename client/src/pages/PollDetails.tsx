@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { format } from "date-fns";
-import { Vote, BarChart3, Clock, Users, Shield, User, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Vote, BarChart3, Clock, Users, Shield, User, CheckCircle, AlertCircle, Trash2, FileText } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
 
 export default function PollDetails() {
@@ -280,14 +280,21 @@ export default function PollDetails() {
               <CardTitle>Poll Management</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <Link href={`/poll/${poll.id}/results`}>
                   <Button variant="outline" data-testid="button-manage-results">
                     <BarChart3 className="w-4 h-4 mr-2" />
                     View Detailed Results
                   </Button>
                 </Link>
-                {/* Add more management options here */}
+                {poll.pollType === "members" && poll.authNumberStart && poll.authNumberEnd && (
+                  <Link href={`/poll/${poll.id}/participation`}>
+                    <Button variant="outline" data-testid="button-participation-report">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Participation Report
+                    </Button>
+                  </Link>
+                )}
               </div>
             </CardContent>
           </Card>

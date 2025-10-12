@@ -18,6 +18,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import PublicVote from "@/pages/PublicVote";
 import AuthenticatedPoll from "@/pages/AuthenticatedPoll";
 import PollConfirmation from "@/pages/PollConfirmation";
+import ParticipationReport from "@/pages/ParticipationReport";
 import Pricing from "@/pages/Pricing";
 import Donate from "@/pages/Donate";
 import NotFound from "@/pages/not-found";
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/poll/:id/confirmation" component={(props) => <ProtectedRoute component={PollConfirmation} {...props} />} />
       <Route path="/poll/:id/vote" component={(props) => <ProtectedRoute component={Vote} {...props} />} />
       <Route path="/poll/:id/results" component={(props) => <ProtectedRoute component={Results} {...props} />} />
+      <Route path="/poll/:id/participation" component={(props) => <ProtectedRoute component={ParticipationReport} {...props} />} />
       
       <Route component={NotFound} />
     </Switch>

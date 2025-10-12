@@ -234,6 +234,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/polls/:id/participation-report', isAuthenticated, async (req: any, res) => {
+    try {
+      const pollId = req.params.id;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Check if poll exists
+      const poll = await storage.getPoll(pollId);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+
+      // Check if user is the poll owner
+      if (poll.createdById !== userId) {
+        return res.status(403).json({ message: "Not authorized to view participation report" });
+      }
+
+      // Check if poll has authentication numbers
+      if (poll.pollType !== 'members' || !poll.authNumberStart || !poll.authNumberEnd) {
+        return res.status(400).json({ message: "Participation report is only available for polls with authentication numbers" });
+      }
+
+      // Get participation report
+      const report = await storage.getAuthNumberReport(pollId);
+      
+      res.json(report);
+    } catch (error) {
+      console.error("Error fetching participation report:", error);
+      res.status(500).json({ message: "Failed to fetch participation report" });
+    }
+  });
+
   // Helper function to generate unique shareable slug with collision checking
   const generateUniqueShareableSlug = async (): Promise<string> => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
