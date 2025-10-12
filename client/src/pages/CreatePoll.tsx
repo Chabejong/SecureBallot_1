@@ -36,7 +36,20 @@ const createPollSchema = z.object({
   isMultipleChoice: z.boolean().default(false),
   isPublicShareable: z.boolean().default(false),
   endDate: z.string().optional().refine((val) => val && val.length > 0, "End date is required"),
+  authNumberStart: z.number().int().optional(),
+  authNumberEnd: z.number().int().optional(),
   options: z.array(pollOptionSchema).min(2, "At least 2 options required"),
+}).refine((data) => {
+  if (data.pollType === "members") {
+    if (!data.authNumberStart || !data.authNumberEnd) {
+      return false;
+    }
+    return data.authNumberEnd > data.authNumberStart;
+  }
+  return true;
+}, {
+  message: "For Members Only polls, authentication number range is required and end must be greater than start",
+  path: ["authNumberEnd"],
 });
 
 type CreatePollForm = z.infer<typeof createPollSchema>;
@@ -62,6 +75,8 @@ export default function CreatePoll() {
       isMultipleChoice: false,
       isPublicShareable: false,
       endDate: "",
+      authNumberStart: undefined,
+      authNumberEnd: undefined,
       options: [{text: "", imageUrl: ""}, {text: "", imageUrl: ""}],
     },
   });
@@ -323,6 +338,66 @@ export default function CreatePoll() {
                     </FormItem>
                   )}
                 />
+
+                {/* Authentication Number Range - Only for Members Only polls */}
+                {pollType === "members" && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-primary font-medium">
+                      <Users className="w-5 h-5" />
+                      <span>Authentication Number Setup</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Define a range of unique authentication numbers. Each member must enter an unused number from this range to vote.
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="authNumberStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Start Number <span className="text-red-500">*</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g., 1"
+                                {...field}
+                                value={field.value || ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                data-testid="input-auth-number-start"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="authNumberEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>End Number <span className="text-red-500">*</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="e.g., 100"
+                                {...field}
+                                value={field.value || ""}
+                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                data-testid="input-auth-number-end"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    {form.watch("authNumberStart") && form.watch("authNumberEnd") && (
+                      <p className="text-sm text-primary font-medium">
+                        Total authentication codes: {form.watch("authNumberEnd")! - form.watch("authNumberStart")! + 1}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Poll Details */}
                 <FormField

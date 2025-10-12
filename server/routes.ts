@@ -306,6 +306,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         options
       );
       
+      // Create authentication numbers for members-only polls
+      if (poll.pollType === 'members' && poll.authNumberStart && poll.authNumberEnd) {
+        await storage.createAuthNumbers(poll.id, poll.authNumberStart, poll.authNumberEnd);
+      }
+      
       // Increment user's monthly poll count for tracking
       // Note: The actual limit check uses real-time count from polls table
       await db.update(users)
