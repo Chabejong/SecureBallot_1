@@ -769,7 +769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/public/polls/:slug/vote', async (req: any, res) => {
     try {
       const slug = req.params.slug;
-      const { optionId, optionIds } = req.body;
+      const { optionId, optionIds, authNumber } = req.body;
       
       const votingOptions = optionIds || [optionId];
       if (!votingOptions || votingOptions.length === 0) {
@@ -812,6 +812,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid option(s) selected" });
       }
 
+      // For members-only polls with authentication numbers, validate the auth number
+      const requiresAuthNumber = poll.pollType === "members" && 
+        poll.authNumberStart !== null && 
+        poll.authNumberStart !== undefined && 
+        poll.authNumberEnd !== null && 
+        poll.authNumberEnd !== undefined;
+
+      if (requiresAuthNumber) {
+        if (!authNumber) {
+          return res.status(400).json({ message: "Authentication number is required for this poll" });
+        }
+
+        const authNumberInt = parseInt(authNumber);
+        if (isNaN(authNumberInt)) {
+          return res.status(400).json({ message: "Invalid authentication number" });
+        }
+
+        // Validate auth number with storage
+        const authValidation = await storage.validateAuthNumber(poll.id, authNumberInt);
+        if (!authValidation.valid) {
+          return res.status(400).json({ message: authValidation.message });
+        }
+      }
+
       // For public polls, use IP address and browser fingerprint for identification
       const ipAddress = req.ip || req.connection.remoteAddress;
       const browserFingerprint = req.headers['x-fingerprint'] || req.headers['user-agent'];
@@ -819,6 +843,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if this device already voted (using IP + browser fingerprint)
       const hasVoted = await storage.hasUserVoted(poll.id, undefined, ipAddress, browserFingerprint);
       if (hasVoted) {
+        // For polls with authentication numbers, don't allow vote changes
+        if (requiresAuthNumber) {
+          return res.status(400).json({ message: "You have already voted in this poll. Vote changes are not allowed for polls with authentication numbers." });
+        }
+        
         if (poll.allowVoteChanges) {
           // Update existing vote
           for (const optionId of votingOptions) {
@@ -838,6 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Submit new votes
+      let voteId: string | undefined;
       for (const optionId of votingOptions) {
         const vote = {
           pollId: poll.id,
@@ -846,7 +876,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ipAddress,
           browserFingerprint: browserFingerprint?.substring(0, 255), // Truncate if too long
         };
-        await storage.submitVote(vote);
+        const submittedVote = await storage.submitVote(vote);
+        // Store the first vote ID for auth number tracking
+        if (!voteId) {
+          voteId = submittedVote.id;
+        }
+      }
+
+      // Mark authentication number as used (if applicable)
+      if (requiresAuthNumber && authNumber && voteId) {
+        await storage.markAuthNumberAsUsed(poll.id, parseInt(authNumber), voteId);
       }
 
       res.status(201).json({ message: "Vote submitted successfully" });
