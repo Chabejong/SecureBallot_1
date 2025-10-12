@@ -1,0 +1,35 @@
+Project Task: Enhance Members-Only Polls with Unique Number Authentication
+Objective: Improve the integrity of "Members Only" polls by implementing a system where each vote is authenticated using a unique, non-reusable number from a pre-defined range. This will prevent duplicate voting and ensure that only authorized members can vote.
+1. Core Requirements
+A. New Fields for Members-Only Polls
+When a user creates a new poll or edits an existing one and marks it as "Members Only," two new required fields must become visible and mandatory:
+Authentication Number Start (Integer): The beginning of the valid number range (e.g., 1).
+Authentication Number End (Integer): The end of the valid number range (e.g., 100).
+Validation: End must be greater than Start. The total number of available codes will be (End - Start + 1).
+B. The Authentication Number Pool
+Upon saving a Members-Only poll, the system must generate a pool of all unique numbers within the specified range (e.g., for 1-100, it generates numbers 1, 2, 3, ..., 100).
+This pool is specific to that single poll.
+These numbers represent the valid "authentication codes" for voting.
+C. The Voting Process for Members
+On the poll page for a Members-Only poll, a new input field labeled "Authentication Number" or "Vote Code" must be displayed to logged-in members.
+The member must enter one of the numbers from the pre-defined range.
+When the vote is submitted, the system must perform the following checks:
+The provided number is an integer within the Start and End range for this poll.
+The provided number has not already been used in a previous vote for this same poll.
+If Valid:
+The vote is recorded.
+The used authentication number is marked as consumed in the pool and cannot be used again for this poll.
+The user sees a success message.
+If Invalid (number out of range, not an integer, or already used):
+The vote is rejected.
+The user sees a clear error message (e.g., "Invalid or already used authentication number.").
+
+D. Secrecy of Authentication Numbers in Results
+The results page and any data exports for the poll must never display which authentication number was used for which vote.
+The authentication number is solely for validation and must be kept private from the general audience and other voters.
+
+For Administrators:
+Easy Setup: Check "Members Only" to enable number authentication
+Participation Reports: See which numbers have/haven't voted
+Results export functionality
+Poll management interface
