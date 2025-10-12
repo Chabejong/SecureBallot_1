@@ -319,7 +319,7 @@ export default function AuthenticatedPoll() {
                   </p>
                   <Input
                     type="number"
-                    placeholder={`Enter number between ${poll.authNumberStart} and ${poll.authNumberEnd}`}
+                    placeholder="Enter your authentication number"
                     value={authNumber}
                     onChange={(e) => setAuthNumber(e.target.value)}
                     disabled={voteMutation.isPending}
