@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Lock, UserCheck, Calendar, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Users, Lock, UserCheck, Calendar, Clock, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,6 +21,7 @@ export default function AuthenticatedPoll() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [authNumber, setAuthNumber] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
 
   const { data: poll, isLoading: pollLoading, error: pollError } = useQuery<PollWithDetails>({
@@ -55,8 +57,11 @@ export default function AuthenticatedPoll() {
   }, [pollError, hasVotedError, setLocation]);
 
   const voteMutation = useMutation({
-    mutationFn: async (optionId: string) => {
-      return apiRequest("POST", `/api/auth/polls/${params?.slug}/vote`, { optionId });
+    mutationFn: async ({ optionId, authNumber }: { optionId: string; authNumber?: string }) => {
+      return apiRequest("POST", `/api/auth/polls/${params?.slug}/vote`, { 
+        optionId,
+        authNumber: authNumber ? parseInt(authNumber) : undefined
+      });
     },
     onSuccess: () => {
       toast({
@@ -94,7 +99,23 @@ export default function AuthenticatedPoll() {
       return;
     }
 
-    voteMutation.mutate(selectedOptions[0]);
+    // Check if authentication number is required
+    const requiresAuthNumber = poll?.pollType === "members" && 
+      poll.authNumberStart !== null && 
+      poll.authNumberStart !== undefined && 
+      poll.authNumberEnd !== null && 
+      poll.authNumberEnd !== undefined;
+
+    if (requiresAuthNumber && !authNumber) {
+      toast({
+        title: "Authentication Number Required",
+        description: "Please enter your authentication number to vote.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    voteMutation.mutate({ optionId: selectedOptions[0], authNumber });
   };
 
   const handleOptionChange = (optionId: string, checked: boolean) => {
@@ -284,6 +305,28 @@ export default function AuthenticatedPoll() {
                     </div>
                   ))}
                 </RadioGroup>
+              )}
+
+              {/* Authentication Number Input */}
+              {poll.pollType === "members" && poll.authNumberStart && poll.authNumberEnd && (
+                <div className="mt-6 p-4 bg-primary/5 border border-primary/30 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Key className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Authentication Number Required</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Enter your unique authentication number to vote. This number can only be used once.
+                  </p>
+                  <Input
+                    type="number"
+                    placeholder={`Enter number between ${poll.authNumberStart} and ${poll.authNumberEnd}`}
+                    value={authNumber}
+                    onChange={(e) => setAuthNumber(e.target.value)}
+                    disabled={voteMutation.isPending}
+                    className="max-w-md"
+                    data-testid="input-auth-number"
+                  />
+                </div>
               )}
 
               <div className="flex gap-3 pt-4">

@@ -75,8 +75,11 @@ export interface IStorage {
   
   // Authentication number operations
   createAuthNumbers(pollId: string, start: number, end: number): Promise<void>;
+  validateAuthNumber(pollId: string, authNumber: number): Promise<{ valid: boolean; message: string; }>;
   isAuthNumberAvailable(pollId: string, authNumber: number): Promise<boolean>;
   markAuthNumberUsed(pollId: string, authNumber: number, voteId: string): Promise<void>;
+  markAuthNumberAsUsed(pollId: string, authNumber: number, voteId: string): Promise<void>;
+  getAuthNumberReport(pollId: string): Promise<{ pollId: string; totalNumbers: number; usedCount: number; unusedCount: number; authNumbers: Array<{ authNumber: number; isUsed: boolean; usedAt?: Date }>; }>;
   getAuthNumbersReport(pollId: string): Promise<{ used: PollAuthNumber[]; unused: PollAuthNumber[]; total: number; usedCount: number; }>;
   getUsedAuthNumbers(pollId: string): Promise<number[]>;
   getUnusedAuthNumbers(pollId: string): Promise<number[]>;
@@ -732,6 +735,68 @@ export class DatabaseStorage implements IStorage {
       .orderBy(pollAuthNumbers.authNumber);
 
     return unused.map(n => n.authNumber);
+  }
+
+  async validateAuthNumber(pollId: string, authNumber: number): Promise<{ valid: boolean; message: string; }> {
+    // First check if the auth number exists in the poll's range
+    const [authNumberRecord] = await db
+      .select()
+      .from(pollAuthNumbers)
+      .where(
+        and(
+          eq(pollAuthNumbers.pollId, pollId),
+          eq(pollAuthNumbers.authNumber, authNumber)
+        )
+      );
+
+    if (!authNumberRecord) {
+      return {
+        valid: false,
+        message: "Invalid authentication number. Please enter a number within the valid range.",
+      };
+    }
+
+    if (authNumberRecord.isUsed) {
+      return {
+        valid: false,
+        message: "This authentication number has already been used. Each number can only be used once.",
+      };
+    }
+
+    return {
+      valid: true,
+      message: "Authentication number is valid.",
+    };
+  }
+
+  async markAuthNumberAsUsed(pollId: string, authNumber: number, voteId: string): Promise<void> {
+    await this.markAuthNumberUsed(pollId, authNumber, voteId);
+  }
+
+  async getAuthNumberReport(pollId: string): Promise<{ 
+    pollId: string; 
+    totalNumbers: number; 
+    usedCount: number; 
+    unusedCount: number; 
+    authNumbers: Array<{ authNumber: number; isUsed: boolean; usedAt?: Date }>; 
+  }> {
+    const report = await this.getAuthNumbersReport(pollId);
+    
+    const authNumbers = [...report.used, ...report.unused]
+      .sort((a, b) => a.authNumber - b.authNumber)
+      .map(n => ({
+        authNumber: n.authNumber,
+        isUsed: n.isUsed,
+        usedAt: n.usedAt || undefined,
+      }));
+
+    return {
+      pollId,
+      totalNumbers: report.total,
+      usedCount: report.usedCount,
+      unusedCount: report.total - report.usedCount,
+      authNumbers,
+    };
   }
 }
 
