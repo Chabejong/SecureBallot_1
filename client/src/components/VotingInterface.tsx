@@ -74,13 +74,13 @@ export function VotingInterface({
             <p className="text-sm text-muted-foreground mb-4">
               Enter your unique authentication number to access the voting options. This number can only be used once.
             </p>
-            <Input
+            <input
               type="number"
               placeholder="Enter your authentication number"
               value={authNumber}
               onChange={(e) => onAuthNumberChange?.(e.target.value)}
               disabled={isSubmitting}
-              className="text-lg h-12"
+              className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               data-testid="input-auth-number"
               autoFocus
             />
