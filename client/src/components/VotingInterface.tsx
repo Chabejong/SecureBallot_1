@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { Vote, Clock, Users, Lock, Key } from "lucide-react";
 import type { PollWithDetails } from "@shared/schema";
@@ -75,10 +74,17 @@ export function VotingInterface({
               Enter your unique authentication number to access the voting options. This number can only be used once.
             </p>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="Enter your authentication number"
               value={authNumber}
-              onChange={(e) => onAuthNumberChange?.(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (onAuthNumberChange && /^\d*$/.test(value)) {
+                  onAuthNumberChange(value);
+                }
+              }}
               disabled={isSubmitting}
               className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               data-testid="input-auth-number"
