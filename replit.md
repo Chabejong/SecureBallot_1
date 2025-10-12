@@ -1,239 +1,56 @@
 # Overview
 
-The Ballot Box is a secure community voting platform built as a full-stack web application. It enables users to create and participate in polls with features like anonymous voting, real-time results, and different poll types (public, members-only, invited). The application emphasizes security, transparency, and user experience through a modern React frontend and Express.js backend with PostgreSQL database integration.
+The Ballot Box is a secure community voting platform designed as a full-stack web application. It enables users to create and participate in polls with features such as anonymous voting, real-time results, and various poll types (public, members-only, invited). The application prioritizes security, transparency, and a positive user experience, utilizing a modern React frontend and an Express.js backend with PostgreSQL database integration. Its purpose is to provide a reliable and versatile voting solution for communities.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes
-
-## October 2025 - Multiple Choice Voting Bug Fix
-Fixed database constraint issue preventing multiple choice poll submissions:
-
-### Issue
-Multiple choice polls failed when users tried to select multiple options. Database was rejecting the second vote with a unique constraint violation.
-
-### Root Cause
-Database unique constraints enforced "one vote per user per poll" but multiple choice polls require "one vote per user per poll per option" to allow users to select multiple options.
-
-### Solution Applied
-1. Updated authenticated user constraint from (pollId, voterId) to (pollId, voterId, optionId)
-2. Updated anonymous user constraint to include optionId: (pollId, coalesce(ipAddress,''), coalesce(browserFingerprint,''), optionId)
-3. This allows users to submit one vote per selected option in multiple choice polls
-4. Maintains security by preventing duplicate votes on the same option
-
-### Verification
-E2e test confirmed:
-- User can successfully select multiple options (e.g., Option A and Option C)
-- Both votes are recorded in database (vote_count = 2)
-- UI correctly displays results showing votes for each selected option
-- Single choice polls continue to work normally
-
-## October 2025 - Critical Security Fix: Duplicate Vote Vulnerability
-Fixed critical vulnerability allowing multiple votes from the same device:
-
-### Vulnerability
-Users could vote multiple times in anonymous polls by scanning the QR code repeatedly or navigating back to the voting page after voting.
-
-### Root Cause
-Database unique constraint only enforced (pollId, ipAddress) but backend logic checked (pollId, ipAddress, browserFingerprint). This mismatch allowed users to vote again with the same IP but different browser fingerprint (e.g., after clearing localStorage).
-
-### Solution Applied
-1. Updated database schema to enforce unique constraint on (pollId, coalesce(ipAddress, ''), coalesce(browserFingerprint, '')) for anonymous votes
-2. Removed old constraint that only checked (pollId, ipAddress)
-3. Used coalesce() to properly handle NULL values in the constraint
-4. Cleaned up 7 existing duplicate votes from the database
-
-### Verification
-E2e test confirmed:
-- First vote succeeds normally
-- Subsequent votes from same device (same IP + fingerprint) are properly blocked
-- Database enforces only 1 vote per device per poll
-- User sees "already voted" status when returning to voting page
-
-## October 2025 - Subscription Limit Alert Dialog
-Replaced toast notification with AlertDialog when users hit subscription limits:
-
-### Implementation
-- When free tier users attempt to create a second poll, an AlertDialog now appears with "Please upgrade to create more polls." message
-- Dialog includes "Upgrade Now" button that redirects to /pricing page
-- Replaced previous toast + auto-redirect approach with explicit user-driven upgrade flow
-- Error parsing updated to handle apiRequest's Error format ("403: {json}")
-
-### User Experience
-- More prominent and less dismissible than toast notifications
-- User must click "Upgrade Now" to proceed to pricing page
-- Dialog blocks interaction with form until user responds
-- Clearer call-to-action for subscription upgrades
-
-## October 2025 - Vote Synchronization with Optimistic Updates
-Implemented proper React Query optimistic updates to prevent duplicate vote submissions:
-
-### Issue
-Race condition allowed duplicate votes when users rapidly double-clicked the submit button before the hasVoted status was updated from the server.
-
-### Solution Applied
-Implemented proper React Query `onMutate` pattern for optimistic updates in both Vote.tsx and PublicVote.tsx:
-
-**Optimistic Update Pattern:**
-1. **onMutate**: Captures previous `hasVoted` cache value before mutating, cancels in-flight queries, optimistically sets `hasVoted: true`, and returns snapshot as context
-2. **onSuccess**: Uses context snapshot (not mutated cache) to determine first-time vs. update vote for correct toast messaging
-3. **onError**: Rolls back optimistic update using snapshot, restoring exact previous cache state
-
-**Key Improvements:**
-- Immediate UI feedback: Submit button disabled instantly via optimistic cache update
-- Proper rollback: Failed submissions restore previous cache state synchronously
-- Correct messaging: First-time votes show "Vote Submitted!", updates show "Vote Updated"
-- Race condition eliminated: Multiple rapid clicks prevented by instant local state update
-
-### Verification
-E2e test confirmed:
-- Despite 6 rapid button clicks, only 1 vote recorded in database
-- Toast message correctly shows "Vote Submitted!" for first-time votes
-- Button becomes disabled immediately on first click
-- Results display correctly after successful vote
-
-## October 2025 - User Subscription Display
-Added subscription tier display to user profiles:
-
-### Implementation
-- Subscription tier shown as colored badge in user dropdown menu
-- Tier colors: Free (gray), Basic (blue), Standard (green), Premium (purple), Professional (indigo), Enterprise (orange), Ultimate (gold gradient)
-- Display appears in both desktop dropdown and mobile navigation menu
-- Backend payment handler updated to match new tier names (Premium €25, Professional €50, Enterprise €75, Ultimate €100)
-
-## October 2025 - Admin User & Payment System Updates
-Latest updates to admin privileges and payment configuration:
-
-### Admin User Implementation
-- Added `isAdmin` boolean field to users schema for admin privilege tracking
-- Implemented admin user: **chabejong@yahoo.com** with unrestricted access
-- Admin users bypass all subscription limits and can create unlimited polls for unlimited participants
-- Created development-only endpoint (`/api/admin/set-admin`) for admin status management
-- Admin check integrated into poll creation limits logic
-
-### PayPal Configuration Updates
-- Updated PayPal payment account to: **nkwettae@yahoo.com**
-- Configured PayPal API credentials (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET)
-- Updated subscription pricing tiers:
-  - Free: 1 poll/month, up to 15 participants
-  - Basic (€5): Unlimited polls, up to 50 participants
-  - Standard (€10): Unlimited polls, 51-100 participants
-  - Pro (€20): Unlimited polls, 101-250 participants
-  - Premium (€50): Unlimited polls, 251-500 participants
-  - Advanced (€75): Unlimited polls, 501-750 participants
-  - Enterprise (€100): Unlimited polls, unlimited participants
-- Added donation page with PayPal integration
-
-## October 2025 - Deployment Fixes & Subscription System Changes
-Applied critical deployment fixes to ensure proper server initialization in production:
-
-### Server Configuration
-- Confirmed server listens on 0.0.0.0:5000 for external access in deployment
-- Added `/api/health` endpoint for deployment health checks and monitoring
-- Implemented startup error handling with catch block to prevent silent failures
-- Secured admin cleanup endpoint (development-only access)
-
-### Subscription System Updates
-- Temporarily disabled subscription limit enforcement on poll creation
-- Users can now create unlimited polls regardless of subscription tier
-- Payment system infrastructure (PayPal integration, transaction auditing) remains intact
-- Subscription verification endpoints and UI continue to function
-
-## September 2025 - Authentication System Migration
-Successfully replaced Replit OIDC authentication with traditional email/password authentication system:
-
-### Backend Changes
-- Implemented Passport.js local strategy with bcrypt password hashing  
-- Created email/password registration and login API endpoints
-- Updated all protected routes to use new authentication middleware
-- Modified user schema to include required password field
-
-### Frontend Changes  
-- Built comprehensive Auth.tsx component with registration and login forms
-- Updated routing to redirect unauthenticated users to /auth page
-- Implemented React Hook Form with Zod validation for form handling
-- Fixed form binding issues with component keys for proper React reconciliation
-- Added explicit navigation after successful login using wouter routing
-
-### Database Changes
-- Added password field to users table (VARCHAR, required)
-- Made email field required (NOT NULL) 
-- Cleared existing user data for clean authentication system migration
-- Sessions table continues to handle authentication state
-
 # System Architecture
 
 ## Frontend Architecture
-The client is built with React 18 using TypeScript and follows a component-based architecture:
-- **Routing**: Uses Wouter for lightweight client-side routing
-- **State Management**: TanStack React Query for server state and caching
-- **UI Framework**: Radix UI components with shadcn/ui design system
-- **Styling**: Tailwind CSS with custom CSS variables for theming
-- **Form Handling**: React Hook Form with Zod schema validation
-- **Build Tool**: Vite for fast development and optimized production builds
+The client is built with React 18, TypeScript, and follows a component-based architecture. It uses Wouter for routing, TanStack React Query for server state and caching, Radix UI components with shadcn/ui design system for the UI, and Tailwind CSS for styling. Form handling is managed by React Hook Form with Zod validation, and Vite is used for building.
 
 ## Backend Architecture
-The server is an Express.js application with TypeScript:
-- **API Structure**: RESTful API design with organized route handlers
-- **Authentication**: Email/password authentication with Passport.js local strategy and bcrypt
-- **Session Management**: Express sessions with PostgreSQL storage
-- **Request Handling**: Middleware for logging, error handling, and authentication
-- **Development**: Hot reloading with Vite integration in development mode
+The server is an Express.js application written in TypeScript. It features a RESTful API, email/password authentication using Passport.js local strategy and bcrypt, and Express sessions with PostgreSQL storage. Middleware is used for logging, error handling, and authentication.
 
 ## Database Layer
-PostgreSQL database with Drizzle ORM for type-safe database operations:
-- **Schema Definition**: Centralized schema in `shared/schema.ts` with Zod validation
-- **Connection**: Neon serverless PostgreSQL with connection pooling
-- **Migrations**: Drizzle Kit for database schema management
-- **Data Access**: Repository pattern implemented in storage layer with interface abstraction
+A PostgreSQL database is used with Drizzle ORM for type-safe operations. The schema is defined centrally, Neon provides serverless hosting with connection pooling, and Drizzle Kit is used for migrations. A repository pattern is implemented in the storage layer for data access.
 
 ## Key Data Models
-- **Users**: User profiles with email, password (hashed), first name, last name, and profile image
-- **Sessions**: Session storage for user authentication state management
-- **Polls**: Poll metadata with configurable options (public/private, anonymous, end dates) 
-- **Poll Options**: Individual voting choices for each poll
-- **Votes**: Vote records with IP tracking for anonymous polls
+The application includes data models for Users (profiles with credentials), Sessions (authentication state), Polls (metadata and configuration), Poll Options (individual choices), and Votes (records including IP tracking for anonymous polls).
 
-## Authentication & Authorization  
-- **Provider**: Email/password authentication with bcrypt password hashing
-- **Session Storage**: PostgreSQL-backed sessions with configurable TTL
-- **Route Protection**: Middleware-based authentication checks for protected routes
-- **User Management**: User registration and login with secure password storage
+## Authentication & Authorization
+The system uses email/password authentication with bcrypt hashing. Sessions are stored in PostgreSQL. Route protection is enforced via middleware, and user management includes secure registration and login.
 
 ## Frontend State Management
-- **Server State**: TanStack React Query with optimistic updates and cache invalidation
-- **Form State**: React Hook Form with real-time validation
-- **Global State**: React Context for authentication state
-- **URL State**: Wouter for navigation and route parameters
+Server state is handled by TanStack React Query with optimistic updates. Form state is managed by React Hook Form with real-time validation. Global application state, particularly for authentication, is managed via React Context. Wouter handles URL and navigation state.
 
 # External Dependencies
 
 ## Database & Storage
-- **Neon Database**: Serverless PostgreSQL hosting with WebSocket support
-- **Drizzle ORM**: Type-safe database toolkit with schema management
-- **PostgreSQL**: Primary database for all application data
+- **Neon Database**: Serverless PostgreSQL hosting.
+- **Drizzle ORM**: Type-safe database toolkit.
+- **PostgreSQL**: Primary database.
 
 ## Authentication
-- **Email/Password**: Traditional authentication with secure password hashing
-- **Passport.js**: Authentication middleware with local strategy
-- **bcrypt**: Password hashing and verification for secure credential storage
+- **Passport.js**: Authentication middleware.
+- **bcrypt**: Password hashing.
 
 ## UI & Styling
-- **Radix UI**: Headless component primitives for accessibility
-- **Tailwind CSS**: Utility-first CSS framework
-- **Lucide React**: Icon library for consistent iconography
-- **shadcn/ui**: Pre-built component library built on Radix
+- **Radix UI**: Headless component primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Lucide React**: Icon library.
+- **shadcn/ui**: Pre-built component library.
 
 ## Development Tools
-- **Vite**: Build tool and development server
-- **TypeScript**: Type safety across frontend and backend
-- **ESBuild**: Fast bundling for production builds
-- **PostCSS**: CSS processing with Tailwind integration
+- **Vite**: Build tool and development server.
+- **TypeScript**: Type safety.
+- **ESBuild**: Fast bundling.
+- **PostCSS**: CSS processing.
 
 ## Runtime & Deployment
-- **Node.js**: Server runtime environment
-- **Express.js**: Web application framework
-- **React**: Frontend framework for user interface
-- **Date-fns**: Date manipulation and formatting utilities
+- **Node.js**: Server runtime.
+- **Express.js**: Web application framework.
+- **React**: Frontend framework.
+- **Date-fns**: Date manipulation utilities.
