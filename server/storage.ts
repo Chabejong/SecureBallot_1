@@ -4,6 +4,7 @@ import {
   pollOptions,
   votes,
   voteAttempts,
+  pollAuthNumbers,
   type User,
   type UpsertUser,
   type Poll,
@@ -14,6 +15,8 @@ import {
   type InsertVote,
   type VoteAttempt,
   type InsertVoteAttempt,
+  type PollAuthNumber,
+  type InsertPollAuthNumber,
   type PollWithDetails,
   type PollWithResults,
 } from "@shared/schema";
@@ -69,6 +72,14 @@ export interface IStorage {
   incrementVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void>;
   resetVoteAttempt(pollId: string, ipAddress: string, hashedFingerprint?: string): Promise<void>;
   cleanupOldAttempts(cutoffDate: Date): Promise<number>;
+  
+  // Authentication number operations
+  createAuthNumbers(pollId: string, start: number, end: number): Promise<void>;
+  isAuthNumberAvailable(pollId: string, authNumber: number): Promise<boolean>;
+  markAuthNumberUsed(pollId: string, authNumber: number, voteId: string): Promise<void>;
+  getAuthNumbersReport(pollId: string): Promise<{ used: PollAuthNumber[]; unused: PollAuthNumber[]; total: number; usedCount: number; }>;
+  getUsedAuthNumbers(pollId: string): Promise<number[]>;
+  getUnusedAuthNumbers(pollId: string): Promise<number[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -627,6 +638,100 @@ export class DatabaseStorage implements IStorage {
       .where(lt(voteAttempts.lastAttemptAt, cutoffDate));
     
     return result.rowCount || 0;
+  }
+
+  // Authentication number operations
+  async createAuthNumbers(pollId: string, start: number, end: number): Promise<void> {
+    const authNumbers: InsertPollAuthNumber[] = [];
+    
+    for (let num = start; num <= end; num++) {
+      authNumbers.push({
+        pollId,
+        authNumber: num,
+        isUsed: false,
+      });
+    }
+
+    await db.insert(pollAuthNumbers).values(authNumbers);
+  }
+
+  async isAuthNumberAvailable(pollId: string, authNumber: number): Promise<boolean> {
+    const [result] = await db
+      .select()
+      .from(pollAuthNumbers)
+      .where(
+        and(
+          eq(pollAuthNumbers.pollId, pollId),
+          eq(pollAuthNumbers.authNumber, authNumber),
+          eq(pollAuthNumbers.isUsed, false)
+        )
+      );
+    
+    return !!result;
+  }
+
+  async markAuthNumberUsed(pollId: string, authNumber: number, voteId: string): Promise<void> {
+    await db
+      .update(pollAuthNumbers)
+      .set({
+        isUsed: true,
+        usedAt: new Date(),
+        usedByVoteId: voteId,
+      })
+      .where(
+        and(
+          eq(pollAuthNumbers.pollId, pollId),
+          eq(pollAuthNumbers.authNumber, authNumber)
+        )
+      );
+  }
+
+  async getAuthNumbersReport(pollId: string): Promise<{ used: PollAuthNumber[]; unused: PollAuthNumber[]; total: number; usedCount: number; }> {
+    const allNumbers = await db
+      .select()
+      .from(pollAuthNumbers)
+      .where(eq(pollAuthNumbers.pollId, pollId))
+      .orderBy(pollAuthNumbers.authNumber);
+
+    const used = allNumbers.filter(n => n.isUsed);
+    const unused = allNumbers.filter(n => !n.isUsed);
+
+    return {
+      used,
+      unused,
+      total: allNumbers.length,
+      usedCount: used.length,
+    };
+  }
+
+  async getUsedAuthNumbers(pollId: string): Promise<number[]> {
+    const used = await db
+      .select({ authNumber: pollAuthNumbers.authNumber })
+      .from(pollAuthNumbers)
+      .where(
+        and(
+          eq(pollAuthNumbers.pollId, pollId),
+          eq(pollAuthNumbers.isUsed, true)
+        )
+      )
+      .orderBy(pollAuthNumbers.authNumber);
+
+    return used.map(n => n.authNumber);
+  }
+
+  async getUnusedAuthNumbers(pollId: string): Promise<number[]> {
+    const unused = await db
+      .select({ authNumber: pollAuthNumbers.authNumber })
+      .from(pollAuthNumbers)
+      .where(
+        and(
+          eq(pollAuthNumbers.pollId, pollId),
+          eq(pollAuthNumbers.isUsed, false)
+        )
+      )
+      .orderBy(pollAuthNumbers.authNumber);
+
+    return unused.map(n => n.authNumber);
   }
 }
 
