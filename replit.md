@@ -51,6 +51,14 @@ Preferred communication style: Simple, everyday language.
 
 **Impact**: Full Members-Only authentication number security now enforced on all voting endpoints, preventing unauthorized votes and ensuring each number can only be used once per poll
 
+### Documentation Update: How It Works Page
+- **Updated**: Members-Only section in "Poll Visibility" to document authentication numbers
+- **Added**: Complete guide covering:
+  - Setting up authentication numbers (range specification, distribution)
+  - How voters use authentication numbers (validation, one-time use)
+  - Tracking participation (reports, CSV export)
+- **Purpose**: Help users understand and utilize the Members-Only authentication feature
+
 # System Architecture
 
 ## Frontend Architecture

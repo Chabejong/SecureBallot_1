@@ -113,9 +113,48 @@ export default function HowItWorks() {
                     Members Only
                   </Badge>
                   <div className="flex-1">
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mb-3">
                       Only registered members of the app can vote. This helps ensure a more verified and controlled audience.
                     </p>
+                    
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-3">
+                      <p className="font-medium text-primary mb-2">🔐 Authentication Number Feature:</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        For even tighter control, you can enable <strong>unique authentication numbers</strong> for your Members-Only polls. This is perfect for communities, classrooms, or organizations where you want to ensure each member votes exactly once.
+                      </p>
+                      
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <div>
+                          <p className="font-medium text-foreground mb-1">📝 Setting Up Authentication Numbers:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>When creating a Members-Only poll, specify a number range (e.g., 1-50 for 50 members)</li>
+                            <li>Each number in the range can only be used once per poll</li>
+                            <li>Distribute the numbers to your members privately (e.g., number 1 to Alice, number 2 to Bob, etc.)</li>
+                            <li>The authentication numbers remain completely secret in the results</li>
+                          </ul>
+                        </div>
+                        
+                        <div>
+                          <p className="font-medium text-foreground mb-1">🗳️ How Voters Use Authentication Numbers:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>When voting, each person enters their unique authentication number</li>
+                            <li>The system validates the number is within the allowed range</li>
+                            <li>Once a number is used, it cannot be used again</li>
+                            <li>Voters can use shared links or be logged in - both work the same way</li>
+                          </ul>
+                        </div>
+                        
+                        <div>
+                          <p className="font-medium text-foreground mb-1">📊 Tracking Participation:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>Poll creators can view a participation report showing which numbers have voted</li>
+                            <li>See at a glance who hasn't participated yet (without seeing their actual votes)</li>
+                            <li>Export participation data as CSV for your records</li>
+                            <li>Perfect for tracking attendance or ensuring everyone has a voice</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
