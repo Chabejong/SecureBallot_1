@@ -28,6 +28,7 @@ export function VotingInterface({
 }: VotingInterfaceProps) {
   const endTime = format(new Date(poll.endDate), "MMMM d, h:mm a");
   const requiresAuthNumber = poll.pollType === "members" && poll.authNumberStart !== null && poll.authNumberStart !== undefined && poll.authNumberEnd !== null && poll.authNumberEnd !== undefined;
+  const hasEnteredAuthNumber = requiresAuthNumber ? authNumber.trim() !== "" : true;
 
   return (
     <Card className="shadow-lg">
@@ -63,8 +64,32 @@ export function VotingInterface({
           </div>
         </div>
 
-        {/* Voting Options */}
-        <div className="space-y-4 mb-8">
+        {/* Authentication Number Input - Show FIRST for members-only polls */}
+        {requiresAuthNumber && (
+          <div className="mb-8 p-6 bg-primary/5 border-2 border-primary/30 rounded-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Key className="w-6 h-6 text-primary" />
+              <h3 className="text-lg font-semibold text-foreground">Authentication Number Required</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Enter your unique authentication number to access the voting options. This number can only be used once.
+            </p>
+            <Input
+              type="number"
+              placeholder="Enter your authentication number"
+              value={authNumber}
+              onChange={(e) => onAuthNumberChange?.(e.target.value)}
+              disabled={isSubmitting}
+              className="text-lg h-12"
+              data-testid="input-auth-number"
+              autoFocus
+            />
+          </div>
+        )}
+
+        {/* Voting Options - Only show after auth number is entered */}
+        {hasEnteredAuthNumber && (
+          <div className="space-y-4 mb-8">
           {poll.options.map((option, index) => {
             const isSelected = poll.isMultipleChoice 
               ? Array.isArray(selectedOptionId) && selectedOptionId.includes(option.id)
@@ -141,30 +166,10 @@ export function VotingInterface({
             );
           })}
         </div>
-
-        {/* Authentication Number - Only for Members Only polls */}
-        {requiresAuthNumber && (
-          <div className="mb-6 p-4 bg-primary/5 border border-primary/30 rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <Key className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-foreground">Authentication Number Required</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Enter your unique authentication number to vote. This number can only be used once.
-            </p>
-            <Input
-              type="number"
-              placeholder="Enter your authentication number"
-              value={authNumber}
-              onChange={(e) => onAuthNumberChange?.(e.target.value)}
-              disabled={isSubmitting}
-              className="max-w-md"
-              data-testid="input-auth-number"
-            />
-          </div>
         )}
 
-        {/* Voting Actions */}
+        {/* Voting Actions - Only show after auth number is entered */}
+        {hasEnteredAuthNumber && (
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
             onClick={onVote}
@@ -184,6 +189,7 @@ export function VotingInterface({
               : (hasVoted ? "Change My Vote" : `Submit My Vote${poll.isMultipleChoice && Array.isArray(selectedOptionId) && selectedOptionId.length > 1 ? 's' : ''}`)}
           </Button>
         </div>
+        )}
       </CardContent>
     </Card>
   );
