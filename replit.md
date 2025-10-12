@@ -1,10 +1,23 @@
 # Overview
 
-The Ballot Box is a secure community voting platform designed as a full-stack web application. It enables users to create and participate in polls with features such as anonymous voting, real-time results, and various poll types (public, members-only, invited). The application prioritizes security, transparency, and a positive user experience, utilizing a modern React frontend and an Express.js backend with PostgreSQL database integration. Its purpose is to provide a reliable and versatile voting solution for communities.
+The Ballot Box is a secure community voting platform designed as a full-stack web application. It enables users to create and participate in polls with features such as anonymous voting, real-time results, and various poll types (public, members-only, invited). Members-Only polls support unique authentication number validation where each number (within a specified range) can only be used once per poll. The application prioritizes security, transparency, and a positive user experience, utilizing a modern React frontend and an Express.js backend with PostgreSQL database integration. Its purpose is to provide a reliable and versatile voting solution for communities.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+# Recent Changes
+
+## October 12, 2025 - Fixed Authentication Number Input Issue
+- **Issue**: Authentication number input field on shared poll links (PublicVote page) was not accepting user input
+- **Root Cause**: PublicVote.tsx component was missing authNumber state and not passing authNumber/onAuthNumberChange props to VotingInterface component
+- **Fix Applied**:
+  - Added authNumber state to PublicVote.tsx
+  - Updated PublicVote to pass authNumber and onAuthNumberChange props to VotingInterface
+  - Updated vote submission in PublicVote to include authNumber in request body
+  - Improved input handling to use .replace(/\D/g, '') for digit-only validation across all voting pages
+  - Changed API endpoint in Vote.tsx from /api/polls/:id to /api/public/polls/:slug for public poll access
+- **Impact**: Users can now successfully enter authentication numbers on shared poll links and QR codes, enabling full Members-Only poll functionality via public access
 
 # System Architecture
 

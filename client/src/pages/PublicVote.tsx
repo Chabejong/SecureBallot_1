@@ -46,6 +46,7 @@ export default function PublicVote() {
   const queryClient = useQueryClient();
   const [showResults, setShowResults] = useState(false);
   const [selectedOptionId, setSelectedOptionId] = useState<string | string[]>("");
+  const [authNumber, setAuthNumber] = useState<string>("");
 
   // Store fingerprint in localStorage for consistency
   const [browserFingerprint] = useState(() => {
@@ -101,7 +102,8 @@ export default function PublicVote() {
         },
         body: JSON.stringify({ 
           optionIds: poll?.isMultipleChoice ? optionIds : undefined,
-          optionId: poll?.isMultipleChoice ? undefined : optionIds[0]
+          optionId: poll?.isMultipleChoice ? undefined : optionIds[0],
+          authNumber: authNumber ? parseInt(authNumber) : undefined,
         }),
       });
 
@@ -277,6 +279,8 @@ export default function PublicVote() {
                 }}
                 isSubmitting={submitVoteMutation.isPending}
                 hasVoted={false}
+                authNumber={authNumber}
+                onAuthNumberChange={setAuthNumber}
                 data-testid="voting-interface"
               />
             )}

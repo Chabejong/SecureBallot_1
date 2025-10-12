@@ -37,7 +37,7 @@ export default function Vote() {
   }, []);
 
   const { data: poll, isLoading } = useQuery({
-    queryKey: [`/api/polls/${id}`],
+    queryKey: [`/api/public/polls/${id}`],
     enabled: !!id,
     select: (data): PollWithDetails => data as PollWithDetails,
   });
