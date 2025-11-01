@@ -252,7 +252,7 @@ export default function Pricing() {
               PayPal Account:
             </p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-paypal-email">
-              nkwettae@yahoo.com
+              info@erwebservice.com
             </p>
           </div>
           

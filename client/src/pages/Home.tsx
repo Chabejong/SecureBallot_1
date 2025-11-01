@@ -175,12 +175,15 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-foreground mb-4">Support</h3>
+              <h3 className="font-semibold text-foreground mb-4">Contact</h3>
               <ul className="space-y-2">
                 <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-help-center">Help Center</a></li>
-                <li><a href="mailto:chabejong@yahoo.com" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-contact-us">Contact Us: chabejong@yahoo.com</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
+                <li><a href="mailto:info@erwebservice.com" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-contact-us">info@erwebservice.com</a></li>
+                <li className="text-muted-foreground text-sm pt-2">
+                  Schenkendorfstr. 1<br />
+                  51545 Waldbröl<br />
+                  Germany
+                </li>
               </ul>
             </div>
           </div>

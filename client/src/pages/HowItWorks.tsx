@@ -282,7 +282,7 @@ export default function HowItWorks() {
                       <li>Start creating unlimited polls with your new participant limits</li>
                     </ol>
                     <p className="text-sm text-muted-foreground mt-3">
-                      <strong>Payment Account:</strong> All payments are processed securely through PayPal to account nkwettae@yahoo.com. You'll receive a payment confirmation email after completing your purchase.
+                      <strong>Payment Account:</strong> All payments are processed securely through PayPal to account info@erwebservice.com. You'll receive a payment confirmation email after completing your purchase.
                     </p>
                   </div>
                 </div>
