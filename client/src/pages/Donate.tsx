@@ -54,7 +54,7 @@ export default function Donate() {
               Donate via PayPal:
             </p>
             <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-donation-paypal-email">
-              info@erwebservice.com
+              nkwettae@yahoo.com
             </p>
           </div>
         </div>
