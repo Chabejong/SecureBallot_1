@@ -23,7 +23,7 @@ export default function InvitedPollManage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadType, setUploadType] = useState<"email" | "phone">("email");
+  const uploadTypeRef = useRef<"email" | "phone">("email");
 
   const [manualEmail, setManualEmail] = useState("");
   const [manualPhone, setManualPhone] = useState("");
@@ -167,7 +167,7 @@ export default function InvitedPollManage() {
         const value = dataLines[i].replace(/^["']|["']$/g, '').trim();
         if (!value) continue;
 
-        if (uploadType === "email") {
+        if (uploadTypeRef.current === "email") {
           if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
             parsedVoters.push({ email: value });
           } else {
@@ -315,19 +315,19 @@ export default function InvitedPollManage() {
                 <div className="flex gap-2">
                   <Button
                     className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
-                    onClick={() => { setUploadType("email"); setTimeout(() => fileInputRef.current?.click(), 0); }}
+                    onClick={() => { uploadTypeRef.current = "email"; fileInputRef.current?.click(); }}
                     disabled={addVotersMutation.isPending}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    {addVotersMutation.isPending && uploadType === "email" ? "Uploading..." : "Upload Emails"}
+                    Upload Emails
                   </Button>
                   <Button
                     className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
-                    onClick={() => { setUploadType("phone"); setTimeout(() => fileInputRef.current?.click(), 0); }}
+                    onClick={() => { uploadTypeRef.current = "phone"; fileInputRef.current?.click(); }}
                     disabled={addVotersMutation.isPending}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    {addVotersMutation.isPending && uploadType === "phone" ? "Uploading..." : "Upload Phones"}
+                    Upload Phones
                   </Button>
                 </div>
               </div>
