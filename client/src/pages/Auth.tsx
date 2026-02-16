@@ -71,6 +71,14 @@ export default function Auth() {
       setMode("login");
       loginForm.setValue("email", registerForm.getValues("email"));
       registerForm.reset();
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      if (redirectParam) {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('redirect', redirectParam);
+        window.history.replaceState({}, '', newUrl.toString());
+      }
     },
     onError: (error: any) => {
       toast({
@@ -96,7 +104,6 @@ export default function Auth() {
       return response.json();
     },
     onSuccess: async () => {
-      // Invalidate and refetch auth query to immediately update auth state
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       
@@ -105,10 +112,12 @@ export default function Auth() {
         description: "Welcome back!",
       });
       
-      // Force navigation to home page after successful login
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || "/";
+      
       setTimeout(() => {
-        setLocation("/");
-      }, 100); // Small delay to ensure auth state is updated
+        setLocation(redirectTo);
+      }, 100);
     },
     onError: (error: any) => {
       toast({

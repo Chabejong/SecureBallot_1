@@ -2,8 +2,21 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Lock, CheckCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handleCreatePoll = () => {
+    if (isAuthenticated) {
+      navigate("/create");
+    } else {
+      navigate("/auth?redirect=/create");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -33,7 +46,7 @@ export default function Landing() {
                   size="lg"
                   variant="outline"
                   className="bg-white/10 text-white border-white/20 hover:bg-white/20 w-full sm:w-auto"
-                  onClick={() => (window.location.href = "/api/login")}
+                  onClick={handleCreatePoll}
                   data-testid="button-create-poll"
                 >
                   Create Your Poll
