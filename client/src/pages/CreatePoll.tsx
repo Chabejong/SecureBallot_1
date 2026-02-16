@@ -307,7 +307,38 @@ export default function CreatePoll() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Poll Type</FormLabel>
-                      <div className="grid md:grid-cols-3 gap-4">
+                      {/* Mobile: dropdown select */}
+                      <div className="md:hidden">
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-poll-type-mobile">
+                              <SelectValue placeholder="Select poll type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="public">
+                              <div className="flex items-center gap-2">
+                                <Globe className="w-4 h-4 text-primary" />
+                                <span>Public Poll — Open to everyone</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="members">
+                              <div className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-primary" />
+                                <span>Members Only — Registered members</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="invited">
+                              <div className="flex items-center gap-2">
+                                <UserCheck className="w-4 h-4 text-primary" />
+                                <span>Invited Only — Specific participants</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {/* Desktop: card selection */}
+                      <div className="hidden md:grid md:grid-cols-3 gap-4">
                         {[
                           { value: "public", icon: Globe, label: "Public Poll", desc: "Open to everyone" },
                           { value: "members", icon: Users, label: "Members Only", desc: "Registered members" },
