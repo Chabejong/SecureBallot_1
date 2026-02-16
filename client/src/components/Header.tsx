@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,17 @@ export function Header() {
   const { isAuthenticated, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
+  const [location] = useLocation();
+
+  const isActive = (path: string) => {
+    if (path === "/") return location === "/";
+    return location.startsWith(path);
+  };
+
+  const navButtonClass = (path: string) =>
+    isActive(path)
+      ? "px-4 py-2 h-10 font-medium bg-primary text-white hover:bg-primary/90 transition-all duration-200"
+      : "px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200";
 
   const handleShare = async () => {
     const shareData = {
@@ -135,13 +146,13 @@ export function Header() {
             {isAuthenticated && (
               <>
                 <Link href="/">
-                  <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-polls">
+                  <Button variant="ghost" className={navButtonClass("/")} data-testid="link-polls">
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Polls
                   </Button>
                 </Link>
                 <Link href="/create">
-                  <Button className="px-4 py-2 h-10 font-medium bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="link-create">
+                  <Button variant="ghost" className={navButtonClass("/create")} data-testid="link-create">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Create
                   </Button>
@@ -149,18 +160,18 @@ export function Header() {
               </>
             )}
             <Link href="/how-it-works">
-              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-how-it-works">
+              <Button variant="ghost" className={navButtonClass("/how-it-works")} data-testid="link-how-it-works">
                 <CheckCircle className="w-4 h-4 mr-2" />
                 How it Works
               </Button>
             </Link>
             <Link href="/pricing">
-              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-pricing">
+              <Button variant="ghost" className={navButtonClass("/pricing")} data-testid="link-pricing">
                 Pricing
               </Button>
             </Link>
             <Link href="/donate">
-              <Button variant="ghost" className="px-4 py-2 h-10 font-medium text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-donate">
+              <Button variant="ghost" className={navButtonClass("/donate")} data-testid="link-donate">
                 Donate
               </Button>
             </Link>
