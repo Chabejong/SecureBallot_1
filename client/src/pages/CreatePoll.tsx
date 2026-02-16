@@ -59,7 +59,6 @@ export default function CreatePoll() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [options, setOptions] = useState<Array<{text: string, imageUrl: string, imageLoadError?: boolean}>>([
-    {text: "", imageUrl: ""}, 
     {text: "", imageUrl: ""}
   ]);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -77,7 +76,7 @@ export default function CreatePoll() {
       endDate: "",
       authNumberStart: undefined,
       authNumberEnd: undefined,
-      options: [{text: "", imageUrl: ""}, {text: "", imageUrl: ""}],
+      options: [{text: "", imageUrl: ""}],
     },
   });
 
@@ -154,7 +153,7 @@ export default function CreatePoll() {
   };
 
   const removeOption = (index: number) => {
-    if (options.length > 2) {
+    if (options.length > 1) {
       const newOptions = options.filter((_, i) => i !== index);
       setOptions(newOptions);
       form.setValue("options", newOptions);
