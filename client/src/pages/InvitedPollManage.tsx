@@ -23,6 +23,7 @@ export default function InvitedPollManage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadType, setUploadType] = useState<"email" | "phone">("email");
 
   const [manualEmail, setManualEmail] = useState("");
   const [manualPhone, setManualPhone] = useState("");
@@ -143,55 +144,43 @@ export default function InvitedPollManage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = (event.target?.result as string).replace(/^\ufeff/, '');
-      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      const allLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
 
-      if (lines.length < 2) {
-        toast({ title: "Error", description: "CSV file must have a header row and at least one data row.", variant: "destructive" });
+      if (allLines.length === 0) {
+        toast({ title: "Error", description: "CSV file is empty.", variant: "destructive" });
         return;
       }
 
-      const delimiter = lines[0].includes(";") ? ";" : ",";
+      const firstLine = allLines[0].toLowerCase().replace(/[^a-z]/g, '');
+      const hasHeader = firstLine === "email" || firstLine === "phone" || firstLine.includes("email") || firstLine.includes("phone");
+      const dataLines = hasHeader ? allLines.slice(1) : allLines;
 
-      const headerLine = lines[0].toLowerCase().replace(/[^a-z,;]/g, '');
-      const hasEmail = headerLine.includes("email");
-      const hasPhone = headerLine.includes("phone");
-
-      if (!hasEmail && !hasPhone) {
-        const firstDataLine = lines[1]?.trim() || '';
-        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(firstDataLine)) {
-          const parsedVoters = lines.slice(1).map(l => l.trim()).filter(l => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(l)).map(email => ({ email }));
-          if (parsedVoters.length > 0) {
-            addVotersMutation.mutate(parsedVoters);
-            return;
-          }
-        }
-        toast({ title: "Error", description: "CSV must have 'email' and/or 'phone' columns in the header row.", variant: "destructive" });
+      if (dataLines.length === 0) {
+        toast({ title: "Error", description: "CSV file must have at least one data row.", variant: "destructive" });
         return;
       }
-
-      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
-      const emailIdx = headers.indexOf("email");
-      const phoneIdx = headers.indexOf("phone");
 
       const parsedVoters: Array<{email?: string; phone?: string}> = [];
       const errors: string[] = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
-        const email = emailIdx >= 0 ? cols[emailIdx] : undefined;
-        const phone = phoneIdx >= 0 ? cols[phoneIdx] : undefined;
+      for (let i = 0; i < dataLines.length; i++) {
+        const value = dataLines[i].replace(/^["']|["']$/g, '').trim();
+        if (!value) continue;
 
-        if (!email && !phone) {
-          errors.push(`Row ${i + 1}: No email or phone`);
-          continue;
+        if (uploadType === "email") {
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            parsedVoters.push({ email: value });
+          } else {
+            errors.push(`Row ${i + 1}: Invalid email "${value}"`);
+          }
+        } else {
+          const phone = value.replace(/[\s\-()]/g, '');
+          if (phone.length >= 5) {
+            parsedVoters.push({ phone });
+          } else {
+            errors.push(`Row ${i + 1}: Invalid phone "${value}"`);
+          }
         }
-
-        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-          errors.push(`Row ${i + 1}: Invalid email "${email}"`);
-          continue;
-        }
-
-        parsedVoters.push({ email: email || undefined, phone: phone || undefined });
       }
 
       if (errors.length > 0) {
@@ -316,21 +305,29 @@ export default function InvitedPollManage() {
                     Phone Template
                   </Button>
                 </div>
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    onChange={handleCSVUpload}
-                    className="hidden"
-                  />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                />
+                <div className="flex gap-2">
                   <Button
-                    className="w-full bg-indigo-700 hover:bg-indigo-800 text-white"
-                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
+                    onClick={() => { setUploadType("email"); setTimeout(() => fileInputRef.current?.click(), 0); }}
                     disabled={addVotersMutation.isPending}
                   >
                     <Upload className="w-4 h-4 mr-2" />
-                    {addVotersMutation.isPending ? "Uploading..." : "Upload CSV File"}
+                    {addVotersMutation.isPending && uploadType === "email" ? "Uploading..." : "Upload Emails"}
+                  </Button>
+                  <Button
+                    className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
+                    onClick={() => { setUploadType("phone"); setTimeout(() => fileInputRef.current?.click(), 0); }}
+                    disabled={addVotersMutation.isPending}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {addVotersMutation.isPending && uploadType === "phone" ? "Uploading..." : "Upload Phones"}
                   </Button>
                 </div>
               </div>
