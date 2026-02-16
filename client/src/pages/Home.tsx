@@ -169,21 +169,13 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-foreground mb-4">Platform</h3>
               <ul className="space-y-2">
-                <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors">How it Works</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Security</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">API Documentation</a></li>
+                <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-help-center">Help Center</a></li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-4">Contact</h3>
               <ul className="space-y-2">
-                <li><a href="/how-it-works" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-help-center">Help Center</a></li>
                 <li><a href="mailto:info@erwebservice.com" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-contact-us">info@erwebservice.com</a></li>
-                <li className="text-muted-foreground text-sm pt-2">
-                  Schenkendorfstr. 1<br />
-                  51545 Waldbröl<br />
-                  Germany
-                </li>
               </ul>
             </div>
           </div>
