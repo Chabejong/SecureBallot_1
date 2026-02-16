@@ -150,16 +150,26 @@ export default function InvitedPollManage() {
         return;
       }
 
-      const headerClean = lines[0].toLowerCase().replace(/[^a-z,]/g, '');
-      const hasEmail = headerClean.includes("email");
-      const hasPhone = headerClean.includes("phone");
+      const delimiter = lines[0].includes(";") ? ";" : ",";
+
+      const headerLine = lines[0].toLowerCase().replace(/[^a-z,;]/g, '');
+      const hasEmail = headerLine.includes("email");
+      const hasPhone = headerLine.includes("phone");
 
       if (!hasEmail && !hasPhone) {
-        toast({ title: "Error", description: "CSV must have 'email' and/or 'phone' columns.", variant: "destructive" });
+        const firstDataLine = lines[1]?.trim() || '';
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(firstDataLine)) {
+          const parsedVoters = lines.slice(1).map(l => l.trim()).filter(l => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(l)).map(email => ({ email }));
+          if (parsedVoters.length > 0) {
+            addVotersMutation.mutate(parsedVoters);
+            return;
+          }
+        }
+        toast({ title: "Error", description: "CSV must have 'email' and/or 'phone' columns in the header row.", variant: "destructive" });
         return;
       }
 
-      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
+      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
       const emailIdx = headers.indexOf("email");
       const phoneIdx = headers.indexOf("phone");
 
@@ -167,7 +177,7 @@ export default function InvitedPollManage() {
       const errors: string[] = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(",").map(c => c.trim());
+        const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
         const email = emailIdx >= 0 ? cols[emailIdx] : undefined;
         const phone = phoneIdx >= 0 ? cols[phoneIdx] : undefined;
 
