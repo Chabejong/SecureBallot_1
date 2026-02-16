@@ -91,6 +91,21 @@ export default function InvitedPollManage() {
     },
   });
 
+  const deleteVoterMutation = useMutation({
+    mutationFn: async (voterId: string) => {
+      const res = await apiRequest("DELETE", `/api/invited-polls/${pollId}/voters/${voterId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Voter Removed", description: "Voter has been removed from the poll." });
+      queryClient.invalidateQueries({ queryKey: ["/api/invited-polls", pollId, "voters"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invited-polls", pollId] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to remove voter", variant: "destructive" });
+    },
+  });
+
   const addManualVoter = () => {
     if (!manualEmail && !manualPhone) {
       toast({ title: "Error", description: "Please enter an email or phone number.", variant: "destructive" });
@@ -411,15 +426,26 @@ export default function InvitedPollManage() {
                               Voted
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">
-                              {voter.invitationStatus === "sent" ? (
-                                <><Send className="w-3 h-3 mr-1" />Invited</>
-                              ) : voter.invitationStatus === "failed" ? (
-                                <><XCircle className="w-3 h-3 mr-1" />Failed</>
-                              ) : (
-                                <><Clock className="w-3 h-3 mr-1" />Pending</>
-                              )}
-                            </Badge>
+                            <>
+                              <Badge variant="secondary">
+                                {voter.invitationStatus === "sent" ? (
+                                  <><Send className="w-3 h-3 mr-1" />Invited</>
+                                ) : voter.invitationStatus === "failed" ? (
+                                  <><XCircle className="w-3 h-3 mr-1" />Failed</>
+                                ) : (
+                                  <><Clock className="w-3 h-3 mr-1" />Pending</>
+                                )}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => deleteVoterMutation.mutate(voter.id)}
+                                disabled={deleteVoterMutation.isPending}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </div>

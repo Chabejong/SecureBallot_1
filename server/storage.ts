@@ -107,6 +107,7 @@ export interface IStorage {
   addInvitedVoters(pollId: string, voters: Array<{email?: string; phone?: string}>): Promise<InvitedVoter[]>;
   getInvitedVoters(pollId: string): Promise<InvitedVoter[]>;
   getInvitedVoterByToken(token: string): Promise<InvitedVoter | undefined>;
+  deleteInvitedVoter(voterId: string, pollId: string): Promise<void>;
   markInvitedVoterAsVoted(voterId: string): Promise<void>;
   updateInvitationStatus(voterId: string, status: string): Promise<void>;
   getInvitedVoterCount(pollId: string): Promise<number>;
@@ -944,6 +945,12 @@ export class DatabaseStorage implements IStorage {
       .from(invitedVoters)
       .where(eq(invitedVoters.token, token));
     return voter;
+  }
+
+  async deleteInvitedVoter(voterId: string, pollId: string): Promise<void> {
+    await db
+      .delete(invitedVoters)
+      .where(and(eq(invitedVoters.id, voterId), eq(invitedVoters.pollId, pollId)));
   }
 
   async markInvitedVoterAsVoted(voterId: string): Promise<void> {

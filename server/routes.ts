@@ -1392,6 +1392,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete an invited voter
+  app.delete('/api/invited-polls/:id/voters/:voterId', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      await storage.deleteInvitedVoter(req.params.voterId, req.params.id);
+      res.json({ message: "Voter removed" });
+    } catch (error) {
+      console.error("Error deleting voter:", error);
+      res.status(500).json({ message: "Failed to delete voter" });
+    }
+  });
+
   // Token-based voting (public - no auth required)
   app.get('/api/invited-vote/:token', async (req, res) => {
     try {
