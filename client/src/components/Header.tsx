@@ -83,7 +83,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" aria-label="Home - CN³M The Ballot Box">
+          <Link href="/" aria-label="Home - CN³M Ballot Box">
             <div className="flex items-center space-x-3 cursor-pointer" data-testid="link-home">
               <img 
                 src={cn3mLogo} 
@@ -92,7 +92,7 @@ export function Header() {
                 data-testid="img-logo-cn3m"
               />
               <span className="text-xl font-bold text-foreground">
-                The Ballot Box
+                Ballot Box
               </span>
             </div>
           </Link>

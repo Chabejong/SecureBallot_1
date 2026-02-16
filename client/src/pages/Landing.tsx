@@ -22,7 +22,7 @@ export default function Landing() {
                 Secure Community Voting <span className="text-secondary">Made Simple</span>
               </h1>
               <p className="text-lg sm:text-xl mb-8 text-white/90 leading-relaxed">
-                Empower your community with transparent, secure, and accessible voting. From local decisions to nationwide polls, The Ballot Box ensures every voice is heard.
+                Empower your community with transparent, secure, and accessible voting. From local decisions to nationwide polls, Ballot Box ensures every voice is heard.
               </p>
               <div className="flex justify-center lg:justify-start">
                 <Button 
@@ -179,7 +179,7 @@ export default function Landing() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold text-foreground">The Ballot Box</span>
+                <span className="text-xl font-bold text-foreground">Ballot Box</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">
                 Empowering communities with secure, transparent, and accessible voting technology. 
@@ -219,7 +219,7 @@ export default function Landing() {
           </div>
           <div className="border-t border-border mt-12 pt-8 text-center">
             <p className="text-muted-foreground text-sm">
-              © 2024 The Ballot Box. All rights reserved. Built with security and transparency in mind.
+              © 2024 Ballot Box. All rights reserved. Built with security and transparency in mind.
             </p>
           </div>
         </div>

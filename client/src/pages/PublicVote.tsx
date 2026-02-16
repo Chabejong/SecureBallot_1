@@ -328,7 +328,7 @@ export default function PublicVote() {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-sm text-muted-foreground mb-4">
-            Powered by <strong>The Ballot Box</strong> • Anonymous & Secure Voting
+            Powered by <strong>Ballot Box</strong> • Anonymous & Secure Voting
           </p>
           <Button variant="outline" onClick={() => window.location.href = "/"}>
             Create Your Own Poll

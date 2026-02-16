@@ -421,7 +421,7 @@ export default function HowItWorks() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Help us keep The Ballot Box running and improving for everyone.
+                Help us keep Ballot Box running and improving for everyone.
               </p>
               
               <div className="bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-lg p-6">

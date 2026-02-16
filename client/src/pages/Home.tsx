@@ -149,7 +149,7 @@ export default function Home() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold text-foreground">The Ballot Box</span>
+                <span className="text-xl font-bold text-foreground">Ballot Box</span>
               </div>
               <p className="text-muted-foreground mb-6 max-w-md">
                 Empowering communities with secure, transparent, and accessible voting technology. 
@@ -189,7 +189,7 @@ export default function Home() {
           </div>
           <div className="border-t border-border mt-12 pt-8 text-center">
             <p className="text-muted-foreground text-sm">
-              © 2024 The Ballot Box. All rights reserved. Built with security and transparency in mind.
+              © 2024 Ballot Box. All rights reserved. Built with security and transparency in mind.
             </p>
           </div>
         </div>

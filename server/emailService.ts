@@ -60,12 +60,12 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${protocol}${domain}/reset-password?token=${resetToken}`;
   
   
-  const subject = 'Reset Your Password - The Ballot Box';
+  const subject = 'Reset Your Password - Ballot Box';
   
   const text = `
 Hello ${firstName || 'User'},
 
-You recently requested to reset your password for The Ballot Box. Click the link below to reset it:
+You recently requested to reset your password for Ballot Box. Click the link below to reset it:
 
 ${resetUrl}
 
@@ -74,13 +74,13 @@ This link will expire in 2 hours for security reasons.
 If you didn't request this password reset, please ignore this email or contact support if you have concerns.
 
 Best regards,
-The Ballot Box Team
+Ballot Box Team
   `.trim();
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2563eb; margin: 0;">The Ballot Box</h1>
+        <h1 style="color: #2563eb; margin: 0;">Ballot Box</h1>
         <p style="color: #6b7280; margin: 5px 0;">Secure Community Voting</p>
       </div>
       
@@ -90,7 +90,7 @@ The Ballot Box Team
           Hello ${firstName || 'User'},
         </p>
         <p style="color: #4b5563; line-height: 1.5;">
-          You recently requested to reset your password for The Ballot Box. 
+          You recently requested to reset your password for Ballot Box. 
           Click the button below to create a new password:
         </p>
         <div style="text-align: center; margin: 30px 0;">
@@ -118,7 +118,7 @@ The Ballot Box Team
       
       <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; color: #6b7280; font-size: 14px;">
         <p>If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
-        <p style="margin-bottom: 0;">Best regards,<br>The Ballot Box Team</p>
+        <p style="margin-bottom: 0;">Best regards,<br>Ballot Box Team</p>
       </div>
     </div>
   `;

@@ -42,10 +42,10 @@ export default function Donate() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4" data-testid="heading-donate">
-            Support The Ballot Box
+            Support Ballot Box
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" data-testid="text-donate-description">
-            Help us keep The Ballot Box running and improve our services. Your donation supports 
+            Help us keep Ballot Box running and improve our services. Your donation supports 
             server costs, development, and new features for the community.
           </p>
           
@@ -206,7 +206,7 @@ export default function Donate() {
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Open Source</h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                The Ballot Box is built with transparency and community in mind
+                Ballot Box is built with transparency and community in mind
               </p>
             </div>
             

@@ -9,7 +9,7 @@ const pricingTiers = [
     name: "Free",
     price: "€0",
     period: "month",
-    description: "Perfect for trying out The Ballot Box",
+    description: "Perfect for trying out Ballot Box",
     participants: "Up to 20 participants",
     pollLimit: "1 poll per month",
     features: [
