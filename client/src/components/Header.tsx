@@ -2,7 +2,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles, Share2 } from "lucide-react";
 import cn3mLogo from "@/assets/cn3m-logo.png";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -13,6 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Sheet,
   SheetContent,
@@ -26,6 +32,35 @@ import { useState } from "react";
 export function Header() {
   const { isAuthenticated, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { toast } = useToast();
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "Ballot Box - Secure Community Voting",
+      text: "Check out Ballot Box for secure, transparent community voting!",
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link copied!",
+          description: "The page link has been copied to your clipboard.",
+        });
+      }
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link copied!",
+          description: "The page link has been copied to your clipboard.",
+        });
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -34,8 +69,6 @@ export function Header() {
         credentials: 'include' 
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      
-      // Redirect to landing page after successful logout
       window.location.href = '/landing';
     } catch (error) {
       console.error('Logout failed:', error);
@@ -97,7 +130,7 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Navigation */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2">
             {isAuthenticated && (
               <>
@@ -133,10 +166,29 @@ export function Header() {
             </Link>
           </nav>
 
-          {/* Auth Actions */}
-          <div className="flex items-center space-x-4">
+          {/* Right side actions */}
+          <div className="flex items-center space-x-2">
+            {/* Share Button - always visible */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 w-10 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                  onClick={handleShare}
+                  data-testid="button-share"
+                >
+                  <Share2 className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Share this page</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Auth actions - hidden on mobile, shown in hamburger menu */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
+              <div className="hidden md:flex items-center space-x-2">
                 <Link href="/create">
                   <Button size="sm" className="hidden lg:flex bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-poll">
                     <Plus className="w-4 h-4 mr-1" />
@@ -200,7 +252,7 @@ export function Header() {
                 </DropdownMenu>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="hidden md:flex items-center space-x-2">
                 <Link href="/auth">
                   <Button variant="outline" size="sm" data-testid="button-sign-in">
                     Sign In
@@ -215,10 +267,10 @@ export function Header() {
               </div>
             )}
 
-            {/* Mobile menu */}
+            {/* Mobile menu button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="md:hidden" data-testid="button-mobile-menu">
+                <Button variant="ghost" size="sm" className="md:hidden h-10 w-10 p-0" data-testid="button-mobile-menu">
                   <Menu className="w-5 h-5 text-foreground" />
                 </Button>
               </SheetTrigger>
