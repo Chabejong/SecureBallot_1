@@ -44,8 +44,7 @@ export default function Landing() {
               <div className="flex justify-center lg:justify-start">
                 <Button
                   size="lg"
-                  variant="outline"
-                  className="bg-white/10 text-white border-white/20 hover:bg-white/20 w-full sm:w-auto"
+                  className="cta-create-poll border-0 px-8 py-4 text-lg rounded-xl w-full sm:w-auto"
                   onClick={handleCreatePoll}
                   data-testid="button-create-poll"
                 >

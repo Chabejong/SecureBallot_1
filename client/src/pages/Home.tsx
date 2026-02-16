@@ -35,7 +35,7 @@ export default function Home() {
               </p>
             </div>
             <Link href="/create" className="flex-shrink-0">
-              <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-poll">
+              <Button size="lg" className="w-full sm:w-auto cta-create-poll border-0 rounded-lg" data-testid="button-create-poll">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Poll
               </Button>
@@ -129,7 +129,7 @@ export default function Home() {
                   Create your first poll to start engaging with your community.
                 </p>
                 <Link href="/create">
-                  <Button data-testid="button-create-my-first-poll">
+                  <Button className="cta-create-poll border-0 rounded-lg" data-testid="button-create-my-first-poll">
                     <Plus className="w-4 h-4 mr-2" />
                     Create My First Poll
                   </Button>

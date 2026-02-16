@@ -190,7 +190,7 @@ export function Header() {
             {isAuthenticated ? (
               <div className="hidden md:flex items-center space-x-2">
                 <Link href="/create">
-                  <Button size="sm" className="hidden lg:flex bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white shadow-md hover:shadow-lg transition-all duration-200" data-testid="button-create-poll">
+                  <Button size="sm" className="hidden lg:flex cta-create-poll border-0 rounded-lg" data-testid="button-create-poll">
                     <Plus className="w-4 h-4 mr-1" />
                     Create Poll
                   </Button>

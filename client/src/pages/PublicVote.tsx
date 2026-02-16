@@ -330,7 +330,7 @@ export default function PublicVote() {
           <p className="text-sm text-muted-foreground mb-4">
             Powered by <strong>Ballot Box</strong> • Anonymous & Secure Voting
           </p>
-          <Button variant="outline" onClick={() => window.location.href = "/"}>
+          <Button className="cta-create-poll border-0 rounded-lg" onClick={() => window.location.href = "/"}>
             Create Your Own Poll
           </Button>
         </div>
