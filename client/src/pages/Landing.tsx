@@ -26,12 +26,6 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1 text-center lg:text-left">
-              <div className="inline-flex items-center bg-white/10 rounded-full px-4 py-2 mb-6">
-                <Shield className="w-4 h-4 text-secondary mr-2" />
-                <span className="text-sm font-medium">
-                  End-to-End Encrypted
-                </span>
-              </div>
               <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight">
                 Secure Community Voting{" "}
                 <span className="text-secondary">Made Simple</span>
