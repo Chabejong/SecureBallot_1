@@ -42,50 +42,52 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Total Polls</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="text-total-polls-count">
-                      {userPolls?.length || 0}
-                    </p>
+          {/* Stats Cards - only show when user has polls */}
+          {userPolls && userPolls.length > 0 && (
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm">Total Polls</p>
+                      <p className="text-2xl font-bold text-foreground" data-testid="text-total-polls-count">
+                        {userPolls.length}
+                      </p>
+                    </div>
+                    <BarChart3 className="w-8 h-8 text-primary" />
                   </div>
-                  <BarChart3 className="w-8 h-8 text-primary" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Active Polls</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="text-active-polls-count">
-                      {userPolls?.filter(p => p.isActive && new Date() < new Date(p.endDate)).length || 0}
-                    </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm">Active Polls</p>
+                      <p className="text-2xl font-bold text-foreground" data-testid="text-active-polls-count">
+                        {userPolls.filter(p => p.isActive && new Date() < new Date(p.endDate)).length}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-secondary" />
                   </div>
-                  <TrendingUp className="w-8 h-8 text-secondary" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Total Votes</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="text-total-participants">
-                      {userPolls?.reduce((sum, poll) => sum + poll.voteCount, 0) || 0}
-                    </p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground text-sm">Total Votes</p>
+                      <p className="text-2xl font-bold text-foreground" data-testid="text-total-participants">
+                        {userPolls.reduce((sum, poll) => sum + poll.voteCount, 0)}
+                      </p>
+                    </div>
+                    <Users className="w-8 h-8 text-accent" />
                   </div>
-                  <Users className="w-8 h-8 text-accent" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* My Polls Section */}
