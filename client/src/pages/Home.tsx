@@ -189,7 +189,7 @@ export default function Home() {
           </div>
           <div className="border-t border-border mt-12 pt-8 text-center">
             <p className="text-muted-foreground text-sm">
-              © 2024 Ballot Box. All rights reserved. Built with security and transparency in mind.
+              © 2024 Ballot Box. All rights reserved. Design by <a href="https://erwebservice.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">erwebservice</a>
             </p>
           </div>
         </div>
