@@ -68,8 +68,8 @@ function Router() {
       {/* Authenticated poll access route */}
       <Route path="/auth/poll/:slug" component={(props) => <ProtectedRoute component={AuthenticatedPoll} {...props} />} />
       
-      {/* Home route - redirect to auth if not authenticated */}
-      <Route path="/" component={!isLoading && isAuthenticated ? Home : () => <Redirect to="/auth" />} />
+      {/* Home route - show Landing for visitors, Home for logged-in users */}
+      <Route path="/" component={!isLoading && isAuthenticated ? Home : Landing} />
       
       {/* Protected routes - always registered but with auth checks */}
       <Route path="/create" component={(props) => <ProtectedRoute component={CreatePoll} {...props} />} />
