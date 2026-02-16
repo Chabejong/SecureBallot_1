@@ -80,15 +80,9 @@ export default function Landing() {
                 Empowering communities with secure, transparent, and accessible
                 voting technology. Every voice matters, every vote counts.
               </p>
-              <div className="flex space-x-4">
-                <Badge className="bg-gradient-to-r from-secondary to-primary text-white">
-                  <Shield className="w-3 h-3 mr-1" />
-                  SOC 2 Compliant
-                </Badge>
-                <Badge className="bg-gradient-to-r from-secondary to-primary text-white">
-                  <Lock className="w-3 h-3 mr-1" />
-                  256-bit Encryption
-                </Badge>
+              <div className="inline-flex items-center bg-gradient-to-r from-secondary to-primary text-white rounded-full px-4 py-2">
+                <Shield className="w-4 h-4 mr-2" />
+                <span className="text-sm font-medium">End-to-End Encrypted</span>
               </div>
             </div>
             <div>
