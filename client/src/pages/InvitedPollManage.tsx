@@ -142,24 +142,24 @@ export default function InvitedPollManage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split("\n").map(l => l.trim()).filter(l => l);
+      const text = (event.target?.result as string).replace(/^\ufeff/, '');
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
 
       if (lines.length < 2) {
         toast({ title: "Error", description: "CSV file must have a header row and at least one data row.", variant: "destructive" });
         return;
       }
 
-      const header = lines[0].toLowerCase();
-      const hasEmail = header.includes("email");
-      const hasPhone = header.includes("phone");
+      const headerClean = lines[0].toLowerCase().replace(/[^a-z,]/g, '');
+      const hasEmail = headerClean.includes("email");
+      const hasPhone = headerClean.includes("phone");
 
       if (!hasEmail && !hasPhone) {
         toast({ title: "Error", description: "CSV must have 'email' and/or 'phone' columns.", variant: "destructive" });
         return;
       }
 
-      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/[^a-z]/g, ''));
       const emailIdx = headers.indexOf("email");
       const phoneIdx = headers.indexOf("phone");
 
