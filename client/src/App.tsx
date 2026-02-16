@@ -21,6 +21,8 @@ import PollConfirmation from "@/pages/PollConfirmation";
 import ParticipationReport from "@/pages/ParticipationReport";
 import Pricing from "@/pages/Pricing";
 import Donate from "@/pages/Donate";
+import InvitedVote from "@/pages/InvitedVote";
+import InvitedPollManage from "@/pages/InvitedPollManage";
 import NotFound from "@/pages/not-found";
 
 // Protected route wrapper that handles auth states properly
@@ -66,6 +68,7 @@ function Router() {
       {/* Public routes available to everyone */}
       <Route path="/landing" component={Landing} />
       <Route path="/vote/:slug" component={PublicVote} />
+      <Route path="/invited-vote/:token" component={InvitedVote} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/donate" component={Donate} />
@@ -86,6 +89,7 @@ function Router() {
       <Route path="/poll/:id/vote" component={(props) => <ProtectedRoute component={Vote} {...props} />} />
       <Route path="/poll/:id/results" component={(props) => <ProtectedRoute component={Results} {...props} />} />
       <Route path="/poll/:id/participation" component={(props) => <ProtectedRoute component={ParticipationReport} {...props} />} />
+      <Route path="/invited-poll/:id/manage" component={(props) => <ProtectedRoute component={InvitedPollManage} {...props} />} />
       
       <Route component={NotFound} />
     </Switch>

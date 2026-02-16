@@ -62,6 +62,7 @@ export default function CreatePoll() {
     {text: "", imageUrl: ""}
   ]);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [questions, setQuestions] = useState([{ text: "", options: [{ text: "" }, { text: "" }] }]);
 
   const form = useForm<CreatePollForm>({
     resolver: zodResolver(createPollSchema),
@@ -147,6 +148,98 @@ export default function CreatePoll() {
       });
     },
   });
+
+  const createInvitedPollMutation = useMutation({
+    mutationFn: async (data: { title: string; description?: string; endDate: string; questions: Array<{ text: string; options: Array<{ text: string }> }> }) => {
+      const response = await apiRequest("POST", "/api/invited-polls", data);
+      const pollData = await response.json();
+      return pollData;
+    },
+    onSuccess: (pollData) => {
+      toast({
+        title: "Success",
+        description: "Invited poll created successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/polls"] });
+      setLocation(`/invited-poll/${pollData.id}/manage`);
+    },
+    onError: async (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      if (error instanceof Error && error.message.startsWith('403:')) {
+        try {
+          const jsonStr = error.message.substring(4).trim();
+          const errorData = JSON.parse(jsonStr);
+          if (errorData.needsUpgrade) {
+            setShowUpgradeDialog(true);
+            return;
+          }
+        } catch (parseError) {
+          console.error('Failed to parse 403 error:', parseError);
+        }
+      }
+      toast({
+        title: "Error",
+        description: "Failed to create invited poll. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addQuestion = () => {
+    setQuestions([...questions, { text: "", options: [{ text: "" }, { text: "" }] }]);
+  };
+
+  const removeQuestion = (qIndex: number) => {
+    if (questions.length > 1) {
+      setQuestions(questions.filter((_, i) => i !== qIndex));
+    }
+  };
+
+  const updateQuestionText = (qIndex: number, text: string) => {
+    const newQuestions = [...questions];
+    newQuestions[qIndex] = { ...newQuestions[qIndex], text };
+    setQuestions(newQuestions);
+  };
+
+  const addQuestionOption = (qIndex: number) => {
+    const newQuestions = [...questions];
+    newQuestions[qIndex] = {
+      ...newQuestions[qIndex],
+      options: [...newQuestions[qIndex].options, { text: "" }],
+    };
+    setQuestions(newQuestions);
+  };
+
+  const removeQuestionOption = (qIndex: number, oIndex: number) => {
+    if (questions[qIndex].options.length > 2) {
+      const newQuestions = [...questions];
+      newQuestions[qIndex] = {
+        ...newQuestions[qIndex],
+        options: newQuestions[qIndex].options.filter((_, i) => i !== oIndex),
+      };
+      setQuestions(newQuestions);
+    }
+  };
+
+  const updateQuestionOption = (qIndex: number, oIndex: number, text: string) => {
+    const newQuestions = [...questions];
+    newQuestions[qIndex] = {
+      ...newQuestions[qIndex],
+      options: newQuestions[qIndex].options.map((o, i) => i === oIndex ? { text } : o),
+    };
+    setQuestions(newQuestions);
+  };
 
   const addOption = () => {
     setOptions([...options, {text: "", imageUrl: ""}]);
@@ -249,6 +342,48 @@ export default function CreatePoll() {
       dateInput.min = minDateTime;
     }
   }, []);
+
+  const handleInvitedSubmit = () => {
+    const title = form.getValues("title");
+    const description = form.getValues("description");
+    const endDate = form.getValues("endDate");
+
+    if (!title || title.trim() === "") {
+      toast({ title: "Error", description: "Poll title is required.", variant: "destructive" });
+      return;
+    }
+    if (!endDate || endDate.trim() === "") {
+      toast({ title: "Error", description: "End date is required.", variant: "destructive" });
+      return;
+    }
+    if (questions.length < 1) {
+      toast({ title: "Error", description: "At least 1 question is required.", variant: "destructive" });
+      return;
+    }
+    for (let i = 0; i < questions.length; i++) {
+      if (!questions[i].text.trim()) {
+        toast({ title: "Error", description: `Question ${i + 1} text is required.`, variant: "destructive" });
+        return;
+      }
+      if (questions[i].options.length < 2) {
+        toast({ title: "Error", description: `Question ${i + 1} must have at least 2 options.`, variant: "destructive" });
+        return;
+      }
+      for (let j = 0; j < questions[i].options.length; j++) {
+        if (!questions[i].options[j].text.trim()) {
+          toast({ title: "Error", description: `Question ${i + 1}, Option ${j + 1} text is required.`, variant: "destructive" });
+          return;
+        }
+      }
+    }
+
+    createInvitedPollMutation.mutate({
+      title: title.trim(),
+      description: description?.trim() || undefined,
+      endDate: new Date(endDate).toISOString(),
+      questions,
+    });
+  };
 
   const onSubmit = (data: CreatePollForm) => {
     console.log('Form submission started with data:', data);
@@ -467,7 +602,8 @@ export default function CreatePoll() {
                   )}
                 />
 
-                {/* Poll Options */}
+                {/* Poll Options - only for public/members polls */}
+                {pollType !== "invited" && (
                 <div>
                   <FormLabel className="text-base font-medium">Poll Options <span className="text-red-500">*</span></FormLabel>
                   <div className="space-y-4 mt-3">
@@ -595,35 +731,123 @@ export default function CreatePoll() {
                     </Button>
                   </div>
                 </div>
+                )}
 
-                {/* Poll Settings */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          End Date & Time <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
+                {/* Questions Builder - only for invited polls */}
+                {pollType === "invited" && (
+                  <div>
+                    <FormLabel className="text-base font-medium">Questions <span className="text-red-500">*</span></FormLabel>
+                    <div className="space-y-6 mt-3">
+                      {questions.map((question, qIndex) => (
+                        <div key={qIndex} className="rounded-lg border border-border p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm text-foreground">Question {qIndex + 1}</span>
+                            {questions.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeQuestion(qIndex)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                           <Input
-                            type="datetime-local"
-                            id="endDate"
-                            {...field}
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              field.onChange(e.target.value);
-                            }}
-                            data-testid="input-end-date"
+                            placeholder="Enter question text..."
+                            value={question.text}
+                            onChange={(e) => updateQuestionText(qIndex, e.target.value)}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
+                          <div className="space-y-2 pl-4">
+                            {question.options.map((opt, oIndex) => (
+                              <div key={oIndex} className="flex items-center gap-2">
+                                <Badge variant="outline" className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-xs">
+                                  {String.fromCharCode(65 + oIndex)}
+                                </Badge>
+                                <Input
+                                  placeholder={`Option ${oIndex + 1}...`}
+                                  value={opt.text}
+                                  onChange={(e) => updateQuestionOption(qIndex, oIndex, e.target.value)}
+                                  className="flex-1"
+                                />
+                                {question.options.length > 2 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeQuestionOption(qIndex, oIndex)}
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addQuestionOption(qIndex)}
+                              className="flex items-center gap-1 text-xs"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Add Option
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addQuestion}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Question
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* End Date */}
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        End Date & Time <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          id="endDate"
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            field.onChange(e.target.value);
+                          }}
+                          data-testid="input-end-date"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Invited poll note */}
+                {pollType === "invited" && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">ℹ️ Invited Poll Info</p>
+                    <p>Invited polls use unique voting links. Results are hidden until the poll ends.</p>
+                  </div>
+                )}
+
+                {/* Poll Settings - hidden for invited polls */}
+                {pollType !== "invited" && (
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex flex-col justify-end space-y-4">
                     <div className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
                       <p className="font-medium mb-1">💡 To create a shareable poll:</p>
@@ -708,6 +932,7 @@ export default function CreatePoll() {
                     />
                   </div>
                 </div>
+                )}
 
                 {/* Submit Buttons */}
                 <div className="flex justify-end space-x-4 pt-6">
@@ -719,14 +944,24 @@ export default function CreatePoll() {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    disabled={createPollMutation.isPending}
-                    className=""
-                    data-testid="button-publish-poll"
-                  >
-                    {createPollMutation.isPending ? "Publishing..." : "Publish Poll"}
-                  </Button>
+                  {pollType === "invited" ? (
+                    <Button
+                      type="button"
+                      onClick={handleInvitedSubmit}
+                      disabled={createInvitedPollMutation.isPending}
+                      data-testid="button-publish-poll"
+                    >
+                      {createInvitedPollMutation.isPending ? "Creating..." : "Create Invited Poll"}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={createPollMutation.isPending}
+                      data-testid="button-publish-poll"
+                    >
+                      {createPollMutation.isPending ? "Publishing..." : "Publish Poll"}
+                    </Button>
+                  )}
                 </div>
               </form>
             </Form>

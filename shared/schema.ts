@@ -230,6 +230,80 @@ export const pollAuthNumbers = pgTable("poll_auth_numbers", {
   isUsedIndex: index("poll_auth_numbers_is_used_idx").on(table.pollId, table.isUsed),
 }));
 
+// Invited poll questions (multi-question support for invited polls)
+export const pollQuestions = pgTable("poll_questions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  text: text("question_text").notNull(),
+  order: integer("order").notNull(),
+  choiceType: varchar("choice_type", { length: 20 }).notNull().default("single"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pollIdIndex: index("poll_questions_poll_id_idx").on(table.pollId),
+  pollIdOrderIndex: index("poll_questions_poll_id_order_idx").on(table.pollId, table.order),
+}));
+
+// Options for invited poll questions
+export const questionOptions = pgTable("question_options", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  questionId: varchar("question_id").notNull().references(() => pollQuestions.id, { onDelete: 'cascade' }),
+  text: varchar("text", { length: 255 }).notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  questionIdIndex: index("question_options_question_id_idx").on(table.questionId),
+  questionIdOrderIndex: index("question_options_question_id_order_idx").on(table.questionId, table.order),
+}));
+
+// Invited voters for invited-only polls
+export const invitedVoters = pgTable("invited_voters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 30 }),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  hasVoted: boolean("has_voted").notNull().default(false),
+  votedAt: timestamp("voted_at"),
+  invitationSentAt: timestamp("invitation_sent_at"),
+  invitationStatus: varchar("invitation_status", { length: 20 }).notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pollIdIndex: index("invited_voters_poll_id_idx").on(table.pollId),
+  tokenIndex: uniqueIndex("invited_voters_token_idx").on(table.token),
+  pollEmailUnique: uniqueIndex("invited_voters_poll_email_unique").on(table.pollId, table.email),
+}));
+
+// Votes for invited poll questions
+export const invitedVotes = pgTable("invited_votes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  questionId: varchar("question_id").notNull().references(() => pollQuestions.id, { onDelete: 'cascade' }),
+  optionId: varchar("option_id").notNull().references(() => questionOptions.id, { onDelete: 'cascade' }),
+  invitedVoterId: varchar("invited_voter_id").notNull().references(() => invitedVoters.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pollIdIndex: index("invited_votes_poll_id_idx").on(table.pollId),
+  questionIdIndex: index("invited_votes_question_id_idx").on(table.questionId),
+  voterQuestionUnique: uniqueIndex("invited_votes_voter_question_unique").on(table.invitedVoterId, table.questionId),
+}));
+
+// Invited poll pricing tiers
+export const invitedPollPayments = pgTable("invited_poll_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pollId: varchar("poll_id").notNull().references(() => polls.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  voterCount: integer("voter_count").notNull(),
+  amount: varchar("amount").notNull(),
+  currency: varchar("currency").notNull().default("EUR"),
+  paypalOrderId: varchar("paypal_order_id"),
+  status: varchar("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  pollIdIndex: index("invited_poll_payments_poll_id_idx").on(table.pollId),
+  userIdIndex: index("invited_poll_payments_user_id_idx").on(table.userId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   polls: many(polls),
@@ -248,6 +322,8 @@ export const pollsRelations = relations(polls, ({ one, many }) => ({
   votes: many(votes),
   targetGroups: many(pollTargetGroups),
   authNumbers: many(pollAuthNumbers),
+  questions: many(pollQuestions),
+  invitedVoters: many(invitedVoters),
 }));
 
 export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
@@ -330,6 +406,60 @@ export const pollAuthNumbersRelations = relations(pollAuthNumbers, ({ one }) => 
   }),
 }));
 
+export const pollQuestionsRelations = relations(pollQuestions, ({ one, many }) => ({
+  poll: one(polls, {
+    fields: [pollQuestions.pollId],
+    references: [polls.id],
+  }),
+  options: many(questionOptions),
+  invitedVotes: many(invitedVotes),
+}));
+
+export const questionOptionsRelations = relations(questionOptions, ({ one }) => ({
+  question: one(pollQuestions, {
+    fields: [questionOptions.questionId],
+    references: [pollQuestions.id],
+  }),
+}));
+
+export const invitedVotersRelations = relations(invitedVoters, ({ one, many }) => ({
+  poll: one(polls, {
+    fields: [invitedVoters.pollId],
+    references: [polls.id],
+  }),
+  invitedVotes: many(invitedVotes),
+}));
+
+export const invitedVotesRelations = relations(invitedVotes, ({ one }) => ({
+  poll: one(polls, {
+    fields: [invitedVotes.pollId],
+    references: [polls.id],
+  }),
+  question: one(pollQuestions, {
+    fields: [invitedVotes.questionId],
+    references: [pollQuestions.id],
+  }),
+  option: one(questionOptions, {
+    fields: [invitedVotes.optionId],
+    references: [questionOptions.id],
+  }),
+  invitedVoter: one(invitedVoters, {
+    fields: [invitedVotes.invitedVoterId],
+    references: [invitedVoters.id],
+  }),
+}));
+
+export const invitedPollPaymentsRelations = relations(invitedPollPayments, ({ one }) => ({
+  poll: one(polls, {
+    fields: [invitedPollPayments.pollId],
+    references: [polls.id],
+  }),
+  user: one(users, {
+    fields: [invitedPollPayments.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertPollSchema = createInsertSchema(polls).omit({
   id: true,
@@ -384,6 +514,34 @@ export const insertPollAuthNumberSchema = createInsertSchema(pollAuthNumbers).om
   id: true,
   createdAt: true,
   usedAt: true,
+});
+
+export const insertPollQuestionSchema = createInsertSchema(pollQuestions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertQuestionOptionSchema = createInsertSchema(questionOptions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInvitedVoterSchema = createInsertSchema(invitedVoters).omit({
+  id: true,
+  createdAt: true,
+  votedAt: true,
+  invitationSentAt: true,
+});
+
+export const insertInvitedVoteSchema = createInsertSchema(invitedVotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInvitedPollPaymentSchema = createInsertSchema(invitedPollPayments).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
 });
 
 // Insert schemas for users
@@ -442,6 +600,55 @@ export type UsedVoteToken = typeof usedVoteTokens.$inferSelect;
 export type InsertUsedVoteToken = z.infer<typeof insertUsedVoteTokenSchema>;
 export type PollAuthNumber = typeof pollAuthNumbers.$inferSelect;
 export type InsertPollAuthNumber = z.infer<typeof insertPollAuthNumberSchema>;
+export type PollQuestion = typeof pollQuestions.$inferSelect;
+export type InsertPollQuestion = z.infer<typeof insertPollQuestionSchema>;
+export type QuestionOption = typeof questionOptions.$inferSelect;
+export type InsertQuestionOption = z.infer<typeof insertQuestionOptionSchema>;
+export type InvitedVoter = typeof invitedVoters.$inferSelect;
+export type InsertInvitedVoter = z.infer<typeof insertInvitedVoterSchema>;
+export type InvitedVote = typeof invitedVotes.$inferSelect;
+export type InsertInvitedVote = z.infer<typeof insertInvitedVoteSchema>;
+export type InvitedPollPayment = typeof invitedPollPayments.$inferSelect;
+export type InsertInvitedPollPayment = z.infer<typeof insertInvitedPollPaymentSchema>;
+
+// Extended types for invited polls
+export type PollQuestionWithOptions = PollQuestion & {
+  options: QuestionOption[];
+};
+
+export type InvitedPollWithDetails = Poll & {
+  creator: User;
+  questions: PollQuestionWithOptions[];
+  voterCount: number;
+  votedCount: number;
+};
+
+export type InvitedPollResults = InvitedPollWithDetails & {
+  results: Array<{
+    questionId: string;
+    questionText: string;
+    options: Array<{
+      optionId: string;
+      text: string;
+      voteCount: number;
+      percentage: number;
+    }>;
+  }>;
+};
+
+// Pricing tiers for invited polls
+export const INVITED_POLL_PRICING = [
+  { min: 0, max: 100, price: 25 },
+  { min: 101, max: 250, price: 50 },
+  { min: 251, max: 700, price: 100 },
+  { min: 701, max: 1000, price: 150 },
+  { min: 1001, max: 2000, price: 200 },
+] as const;
+
+export function getInvitedPollPrice(voterCount: number): number | null {
+  const tier = INVITED_POLL_PRICING.find(t => voterCount >= t.min && voterCount <= t.max);
+  return tier ? tier.price : null;
+}
 
 // Extended types for queries
 export type PollWithDetails = Poll & {

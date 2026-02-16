@@ -5,6 +5,11 @@ import {
   votes,
   voteAttempts,
   pollAuthNumbers,
+  pollQuestions,
+  questionOptions,
+  invitedVoters,
+  invitedVotes,
+  invitedPollPayments,
   type User,
   type UpsertUser,
   type Poll,
@@ -19,9 +24,18 @@ import {
   type InsertPollAuthNumber,
   type PollWithDetails,
   type PollWithResults,
+  type PollQuestion,
+  type QuestionOption,
+  type InvitedVoter,
+  type InvitedVote,
+  type InvitedPollPayment,
+  type PollQuestionWithOptions,
+  type InvitedPollWithDetails,
+  type InvitedPollResults,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count, lt, inArray } from "drizzle-orm";
+import crypto from "crypto";
 
 // Interface for storage operations
 export interface IStorage {
@@ -83,6 +97,29 @@ export interface IStorage {
   getAuthNumbersReport(pollId: string): Promise<{ used: PollAuthNumber[]; unused: PollAuthNumber[]; total: number; usedCount: number; }>;
   getUsedAuthNumbers(pollId: string): Promise<number[]>;
   getUnusedAuthNumbers(pollId: string): Promise<number[]>;
+  
+  // Invited poll operations
+  createInvitedPoll(pollData: InsertPoll, questions: Array<{text: string; choiceType?: string; options: Array<{text: string}>}>): Promise<Poll>;
+  getInvitedPollDetails(pollId: string): Promise<InvitedPollWithDetails | undefined>;
+  getInvitedPollQuestions(pollId: string): Promise<PollQuestionWithOptions[]>;
+  
+  // Invited voter operations
+  addInvitedVoters(pollId: string, voters: Array<{email?: string; phone?: string}>): Promise<InvitedVoter[]>;
+  getInvitedVoters(pollId: string): Promise<InvitedVoter[]>;
+  getInvitedVoterByToken(token: string): Promise<InvitedVoter | undefined>;
+  markInvitedVoterAsVoted(voterId: string): Promise<void>;
+  updateInvitationStatus(voterId: string, status: string): Promise<void>;
+  getInvitedVoterCount(pollId: string): Promise<number>;
+  
+  // Invited voting operations
+  submitInvitedVotes(pollId: string, invitedVoterId: string, votes: Array<{questionId: string; optionId: string}>): Promise<void>;
+  getInvitedPollResults(pollId: string): Promise<InvitedPollResults | undefined>;
+  getInvitedPollParticipation(pollId: string): Promise<{total: number; voted: number; pending: number; voters: InvitedVoter[]}>;
+  
+  // Invited poll payment operations
+  createInvitedPollPayment(pollId: string, userId: string, voterCount: number, amount: string): Promise<InvitedPollPayment>;
+  getInvitedPollPayment(pollId: string): Promise<InvitedPollPayment | undefined>;
+  updateInvitedPollPaymentStatus(paymentId: string, status: string, paypalOrderId?: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -797,6 +834,242 @@ export class DatabaseStorage implements IStorage {
       unusedCount: report.total - report.usedCount,
       authNumbers,
     };
+  }
+
+  // Invited poll operations
+  async createInvitedPoll(pollData: InsertPoll, questions: Array<{text: string; choiceType?: string; options: Array<{text: string}>}>): Promise<Poll> {
+    return await db.transaction(async (tx) => {
+      const [poll] = await tx.insert(polls).values({
+        ...pollData,
+        pollType: "invited",
+      }).returning();
+
+      for (let qi = 0; qi < questions.length; qi++) {
+        const q = questions[qi];
+        const [question] = await tx.insert(pollQuestions).values({
+          pollId: poll.id,
+          text: q.text,
+          order: qi,
+          choiceType: q.choiceType || "single",
+        }).returning();
+
+        const optionsData = q.options.map((opt, oi) => ({
+          questionId: question.id,
+          text: opt.text,
+          order: oi,
+        }));
+
+        if (optionsData.length > 0) {
+          await tx.insert(questionOptions).values(optionsData);
+        }
+      }
+
+      return poll;
+    });
+  }
+
+  async getInvitedPollDetails(pollId: string): Promise<InvitedPollWithDetails | undefined> {
+    const [pollRow] = await db.select().from(polls).where(eq(polls.id, pollId));
+    if (!pollRow) return undefined;
+
+    const [creator] = await db.select().from(users).where(eq(users.id, pollRow.createdById));
+    if (!creator) return undefined;
+
+    const { password: _, ...creatorWithoutPassword } = creator;
+    const questions = await this.getInvitedPollQuestions(pollId);
+
+    const [voterStats] = await db
+      .select({
+        total: count(),
+        voted: sql<number>`cast(count(case when ${invitedVoters.hasVoted} = true then 1 end) as int)`,
+      })
+      .from(invitedVoters)
+      .where(eq(invitedVoters.pollId, pollId));
+
+    return {
+      ...pollRow,
+      creator: creatorWithoutPassword,
+      questions,
+      voterCount: voterStats?.total || 0,
+      votedCount: voterStats?.voted || 0,
+    };
+  }
+
+  async getInvitedPollQuestions(pollId: string): Promise<PollQuestionWithOptions[]> {
+    const questionsResult = await db
+      .select()
+      .from(pollQuestions)
+      .where(eq(pollQuestions.pollId, pollId))
+      .orderBy(pollQuestions.order);
+
+    const result: PollQuestionWithOptions[] = [];
+    for (const q of questionsResult) {
+      const opts = await db
+        .select()
+        .from(questionOptions)
+        .where(eq(questionOptions.questionId, q.id))
+        .orderBy(questionOptions.order);
+      result.push({ ...q, options: opts });
+    }
+
+    return result;
+  }
+
+  // Invited voter operations
+  async addInvitedVoters(pollId: string, voters: Array<{email?: string; phone?: string}>): Promise<InvitedVoter[]> {
+    const voterRecords = voters.map(v => ({
+      pollId,
+      email: v.email || null,
+      phone: v.phone || null,
+      token: crypto.randomBytes(32).toString("hex"),
+      hasVoted: false,
+      invitationStatus: "pending" as const,
+    }));
+
+    const inserted = await db.insert(invitedVoters).values(voterRecords).returning();
+    return inserted;
+  }
+
+  async getInvitedVoters(pollId: string): Promise<InvitedVoter[]> {
+    return await db
+      .select()
+      .from(invitedVoters)
+      .where(eq(invitedVoters.pollId, pollId))
+      .orderBy(invitedVoters.createdAt);
+  }
+
+  async getInvitedVoterByToken(token: string): Promise<InvitedVoter | undefined> {
+    const [voter] = await db
+      .select()
+      .from(invitedVoters)
+      .where(eq(invitedVoters.token, token));
+    return voter;
+  }
+
+  async markInvitedVoterAsVoted(voterId: string): Promise<void> {
+    await db
+      .update(invitedVoters)
+      .set({ hasVoted: true, votedAt: new Date() })
+      .where(eq(invitedVoters.id, voterId));
+  }
+
+  async updateInvitationStatus(voterId: string, status: string): Promise<void> {
+    await db
+      .update(invitedVoters)
+      .set({ 
+        invitationStatus: status, 
+        invitationSentAt: status === "sent" ? new Date() : undefined 
+      })
+      .where(eq(invitedVoters.id, voterId));
+  }
+
+  async getInvitedVoterCount(pollId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(invitedVoters)
+      .where(eq(invitedVoters.pollId, pollId));
+    return result?.count || 0;
+  }
+
+  // Invited voting operations
+  async submitInvitedVotes(pollId: string, invitedVoterId: string, voteData: Array<{questionId: string; optionId: string}>): Promise<void> {
+    await db.transaction(async (tx) => {
+      const votesData = voteData.map(v => ({
+        pollId,
+        questionId: v.questionId,
+        optionId: v.optionId,
+        invitedVoterId,
+      }));
+
+      await tx.insert(invitedVotes).values(votesData);
+      await tx
+        .update(invitedVoters)
+        .set({ hasVoted: true, votedAt: new Date() })
+        .where(eq(invitedVoters.id, invitedVoterId));
+    });
+  }
+
+  async getInvitedPollResults(pollId: string): Promise<InvitedPollResults | undefined> {
+    const pollDetails = await this.getInvitedPollDetails(pollId);
+    if (!pollDetails) return undefined;
+
+    const results: InvitedPollResults["results"] = [];
+
+    for (const question of pollDetails.questions) {
+      const voteResults = await db
+        .select({
+          optionId: questionOptions.id,
+          text: questionOptions.text,
+          voteCount: sql<number>`cast(count(${invitedVotes.id}) as int)`,
+        })
+        .from(questionOptions)
+        .leftJoin(invitedVotes, and(
+          eq(questionOptions.id, invitedVotes.optionId),
+          eq(invitedVotes.questionId, question.id)
+        ))
+        .where(eq(questionOptions.questionId, question.id))
+        .groupBy(questionOptions.id, questionOptions.text, questionOptions.order)
+        .orderBy(questionOptions.order);
+
+      const totalVotes = voteResults.reduce((sum, r) => sum + (r.voteCount || 0), 0);
+
+      results.push({
+        questionId: question.id,
+        questionText: question.text,
+        options: voteResults.map(r => ({
+          optionId: r.optionId,
+          text: r.text,
+          voteCount: r.voteCount || 0,
+          percentage: totalVotes > 0 ? Math.round(((r.voteCount || 0) / totalVotes) * 100) : 0,
+        })),
+      });
+    }
+
+    return { ...pollDetails, results };
+  }
+
+  async getInvitedPollParticipation(pollId: string): Promise<{total: number; voted: number; pending: number; voters: InvitedVoter[]}> {
+    const voters = await this.getInvitedVoters(pollId);
+    const voted = voters.filter(v => v.hasVoted).length;
+    return {
+      total: voters.length,
+      voted,
+      pending: voters.length - voted,
+      voters,
+    };
+  }
+
+  // Invited poll payment operations
+  async createInvitedPollPayment(pollId: string, userId: string, voterCount: number, amount: string): Promise<InvitedPollPayment> {
+    const [payment] = await db.insert(invitedPollPayments).values({
+      pollId,
+      userId,
+      voterCount,
+      amount,
+      currency: "EUR",
+      status: "pending",
+    }).returning();
+    return payment;
+  }
+
+  async getInvitedPollPayment(pollId: string): Promise<InvitedPollPayment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(invitedPollPayments)
+      .where(eq(invitedPollPayments.pollId, pollId))
+      .orderBy(desc(invitedPollPayments.createdAt));
+    return payment;
+  }
+
+  async updateInvitedPollPaymentStatus(paymentId: string, status: string, paypalOrderId?: string): Promise<void> {
+    const updateData: any = { status };
+    if (paypalOrderId) updateData.paypalOrderId = paypalOrderId;
+    if (status === "completed") updateData.completedAt = new Date();
+    
+    await db
+      .update(invitedPollPayments)
+      .set(updateData)
+      .where(eq(invitedPollPayments.id, paymentId));
   }
 }
 

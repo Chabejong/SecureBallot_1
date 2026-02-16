@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, registerUser } from "./localAuth";
-import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema, forgotPasswordSchema, resetPasswordSchema, users, paymentTransactions, insertPaymentTransactionSchema } from "@shared/schema";
+import { insertPollSchema, insertVoteSchema, registerUserSchema, loginUserSchema, forgotPasswordSchema, resetPasswordSchema, users, paymentTransactions, insertPaymentTransactionSchema, getInvitedPollPrice, INVITED_POLL_PRICING } from "@shared/schema";
 import { z } from "zod";
 import passport from "passport";
 import bcrypt from "bcrypt";
@@ -1231,6 +1231,400 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking vote status by slug:", error);
       res.status(500).json({ message: "Failed to check vote status" });
+    }
+  });
+
+  // ===== INVITED POLL ROUTES =====
+
+  const createInvitedPollSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+    endDate: z.string().transform((dateString) => new Date(dateString)),
+    showResultsToVoters: z.boolean().optional().default(false),
+    questions: z.array(z.object({
+      text: z.string().min(1, "Question text is required"),
+      choiceType: z.string().optional().default("single"),
+      options: z.array(z.object({
+        text: z.string().min(1, "Option text is required"),
+      })).min(2, "Each question needs at least 2 options"),
+    })).min(1, "At least one question is required"),
+  });
+
+  // Static routes MUST come before parameterized :id routes
+  app.get('/api/invited-polls/csv-template', (req, res) => {
+    const csv = "email,phone\njohn@example.com,+1234567890\njane@example.com,+0987654321\n";
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="voter-template.csv"');
+    res.send(csv);
+  });
+
+  app.get('/api/invited-polls/pricing', (req, res) => {
+    res.json({ tiers: INVITED_POLL_PRICING });
+  });
+
+  app.post('/api/invited-polls', isAuthenticated, async (req: any, res) => {
+    try {
+      const data = createInvitedPollSchema.parse(req.body);
+      const userId = req.user.id;
+
+      const pollData = {
+        title: data.title,
+        description: data.description || null,
+        pollType: "invited" as const,
+        isAnonymous: true,
+        allowComments: false,
+        allowVoteChanges: false,
+        isMultipleChoice: false,
+        isActive: true,
+        isPublicShareable: false,
+        endDate: data.endDate,
+        createdById: userId,
+      };
+
+      const poll = await storage.createInvitedPoll(pollData, data.questions);
+      const details = await storage.getInvitedPollDetails(poll.id);
+      res.status(201).json(details);
+    } catch (error: any) {
+      console.error("Error creating invited poll:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid poll data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create invited poll" });
+    }
+  });
+
+  app.get('/api/invited-polls/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const details = await storage.getInvitedPollDetails(req.params.id);
+      if (!details) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      if (details.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      res.json(details);
+    } catch (error) {
+      console.error("Error fetching invited poll:", error);
+      res.status(500).json({ message: "Failed to fetch invited poll" });
+    }
+  });
+
+  app.get('/api/invited-polls/:id/questions', isAuthenticated, async (req: any, res) => {
+    try {
+      const questions = await storage.getInvitedPollQuestions(req.params.id);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  // Voter management
+  const addVotersSchema = z.object({
+    voters: z.array(z.object({
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+    }).refine(v => v.email || v.phone, "Either email or phone is required")),
+  });
+
+  app.post('/api/invited-polls/:id/voters', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const data = addVotersSchema.parse(req.body);
+      const currentCount = await storage.getInvitedVoterCount(req.params.id);
+      const newTotal = currentCount + data.voters.length;
+
+      if (newTotal > 2000) {
+        return res.status(400).json({ message: "Maximum 2000 voters per poll" });
+      }
+
+      const price = getInvitedPollPrice(newTotal);
+      if (price === null) {
+        return res.status(400).json({ message: "Voter count exceeds maximum allowed" });
+      }
+
+      const voters = await storage.addInvitedVoters(req.params.id, data.voters);
+      res.status(201).json({ voters, totalCount: newTotal, price });
+    } catch (error: any) {
+      console.error("Error adding voters:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid voter data", errors: error.errors });
+      }
+      if (error.message?.includes("duplicate key")) {
+        return res.status(400).json({ message: "Some voters are already added to this poll" });
+      }
+      res.status(500).json({ message: "Failed to add voters" });
+    }
+  });
+
+  app.get('/api/invited-polls/:id/voters', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const voters = await storage.getInvitedVoters(req.params.id);
+      res.json(voters);
+    } catch (error) {
+      console.error("Error fetching voters:", error);
+      res.status(500).json({ message: "Failed to fetch voters" });
+    }
+  });
+
+  app.get('/api/invited-polls/:id/participation', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      const participation = await storage.getInvitedPollParticipation(req.params.id);
+      res.json(participation);
+    } catch (error) {
+      console.error("Error fetching participation:", error);
+      res.status(500).json({ message: "Failed to fetch participation data" });
+    }
+  });
+
+  // Token-based voting (public - no auth required)
+  app.get('/api/invited-vote/:token', async (req, res) => {
+    try {
+      const voter = await storage.getInvitedVoterByToken(req.params.token);
+      if (!voter) {
+        return res.status(404).json({ message: "Invalid voting link" });
+      }
+      if (voter.hasVoted) {
+        return res.status(400).json({ message: "You have already voted", alreadyVoted: true });
+      }
+
+      const poll = await storage.getInvitedPollDetails(voter.pollId);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      if (!poll.isActive || new Date() > new Date(poll.endDate)) {
+        return res.status(400).json({ message: "This poll has ended" });
+      }
+
+      res.json({
+        poll: {
+          id: poll.id,
+          title: poll.title,
+          description: poll.description,
+          endDate: poll.endDate,
+          questions: poll.questions,
+        },
+        voterId: voter.id,
+      });
+    } catch (error) {
+      console.error("Error loading invited vote:", error);
+      res.status(500).json({ message: "Failed to load voting page" });
+    }
+  });
+
+  const submitInvitedVoteSchema = z.object({
+    votes: z.array(z.object({
+      questionId: z.string(),
+      optionId: z.string(),
+    })),
+  });
+
+  app.post('/api/invited-vote/:token', async (req, res) => {
+    try {
+      const voter = await storage.getInvitedVoterByToken(req.params.token);
+      if (!voter) {
+        return res.status(404).json({ message: "Invalid voting link" });
+      }
+      if (voter.hasVoted) {
+        return res.status(400).json({ message: "You have already voted" });
+      }
+
+      const poll = await storage.getInvitedPollDetails(voter.pollId);
+      if (!poll) {
+        return res.status(404).json({ message: "Poll not found" });
+      }
+      if (!poll.isActive || new Date() > new Date(poll.endDate)) {
+        return res.status(400).json({ message: "This poll has ended" });
+      }
+
+      const data = submitInvitedVoteSchema.parse(req.body);
+
+      const questionIds = poll.questions.map(q => q.id);
+      for (const vote of data.votes) {
+        if (!questionIds.includes(vote.questionId)) {
+          return res.status(400).json({ message: "Invalid question ID" });
+        }
+        const question = poll.questions.find(q => q.id === vote.questionId);
+        if (!question?.options.some(o => o.id === vote.optionId)) {
+          return res.status(400).json({ message: "Invalid option ID" });
+        }
+      }
+
+      if (data.votes.length !== poll.questions.length) {
+        return res.status(400).json({ message: "You must answer all questions" });
+      }
+
+      await storage.submitInvitedVotes(voter.pollId, voter.id, data.votes);
+      res.json({ message: "Your vote has been recorded. Thank you!" });
+    } catch (error: any) {
+      console.error("Error submitting invited vote:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid vote data" });
+      }
+      res.status(500).json({ message: "Failed to submit vote" });
+    }
+  });
+
+  // Invited poll results (admin only, after poll ends)
+  app.get('/api/invited-polls/:id/results', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const now = new Date();
+      if (now < new Date(poll.endDate)) {
+        return res.status(400).json({ message: "Results are hidden until the poll ends", pollEndDate: poll.endDate });
+      }
+
+      const results = await storage.getInvitedPollResults(req.params.id);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching invited poll results:", error);
+      res.status(500).json({ message: "Failed to fetch results" });
+    }
+  });
+
+  // Send invitations via email
+  app.post('/api/invited-polls/:id/send-invitations', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id && !req.user.isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const voters = await storage.getInvitedVoters(req.params.id);
+      const pendingVoters = voters.filter(v => v.invitationStatus === "pending" && v.email);
+
+      if (pendingVoters.length === 0) {
+        return res.status(400).json({ message: "No pending invitations to send" });
+      }
+
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      let sent = 0;
+      let failed = 0;
+
+      for (const voter of pendingVoters) {
+        try {
+          const voteLink = `${baseUrl}/invited-vote/${voter.token}`;
+          
+          if (voter.email) {
+            const sgMail = require('@sendgrid/mail');
+            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+            
+            await sgMail.send({
+              to: voter.email,
+              from: process.env.SENDGRID_FROM_EMAIL || 'noreply@ballotbox.com',
+              subject: `You're invited to vote: ${poll.title}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <h2 style="color: #1a56db;">You've been invited to vote!</h2>
+                  <p>You have been invited to participate in: <strong>${poll.title}</strong></p>
+                  ${poll.description ? `<p>${poll.description}</p>` : ''}
+                  <p>This is your personal voting link. Please do not share it with others.</p>
+                  <p style="margin: 20px 0;">
+                    <a href="${voteLink}" style="background-color: #1a56db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                      Cast Your Vote
+                    </a>
+                  </p>
+                  <p style="color: #666; font-size: 12px;">
+                    Voting ends: ${new Date(poll.endDate).toLocaleDateString()}
+                  </p>
+                  <p style="color: #999; font-size: 11px;">
+                    This link is unique to you and can only be used once.
+                  </p>
+                </div>
+              `,
+            });
+            
+            await storage.updateInvitationStatus(voter.id, "sent");
+            sent++;
+          }
+        } catch (emailError) {
+          console.error(`Failed to send invitation to ${voter.email}:`, emailError);
+          await storage.updateInvitationStatus(voter.id, "failed");
+          failed++;
+        }
+      }
+
+      res.json({ sent, failed, total: pendingVoters.length });
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+      res.status(500).json({ message: "Failed to send invitations" });
+    }
+  });
+
+  // Invited poll payment - get price for current poll
+  app.get('/api/invited-polls/:id/payment-info', isAuthenticated, async (req: any, res) => {
+    try {
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const voterCount = await storage.getInvitedVoterCount(req.params.id);
+      const price = getInvitedPollPrice(voterCount);
+      const existingPayment = await storage.getInvitedPollPayment(req.params.id);
+
+      res.json({
+        voterCount,
+        price,
+        isPaid: existingPayment?.status === "completed",
+        paymentId: existingPayment?.id,
+      });
+    } catch (error) {
+      console.error("Error fetching payment info:", error);
+      res.status(500).json({ message: "Failed to fetch payment info" });
+    }
+  });
+
+  // Record invited poll payment after PayPal capture
+  app.post('/api/invited-polls/:id/record-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { paypalOrderId } = req.body;
+      const poll = await storage.getInvitedPollDetails(req.params.id);
+      if (!poll) return res.status(404).json({ message: "Poll not found" });
+      if (poll.createdById !== req.user.id) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const voterCount = await storage.getInvitedVoterCount(req.params.id);
+      const price = getInvitedPollPrice(voterCount);
+      if (price === null) {
+        return res.status(400).json({ message: "Invalid voter count" });
+      }
+
+      const payment = await storage.createInvitedPollPayment(
+        req.params.id,
+        req.user.id,
+        voterCount,
+        price.toString()
+      );
+      await storage.updateInvitedPollPaymentStatus(payment.id, "completed", paypalOrderId);
+
+      res.json({ message: "Payment recorded", paymentId: payment.id });
+    } catch (error) {
+      console.error("Error recording payment:", error);
+      res.status(500).json({ message: "Failed to record payment" });
     }
   });
 

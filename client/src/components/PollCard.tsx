@@ -105,7 +105,7 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
           </div>
         </div>
         
-        <Link href={`/poll/${poll.id}`}>
+        <Link href={poll.pollType === "invited" ? `/invited-poll/${poll.id}/manage` : `/poll/${poll.id}`}>
           <div className="cursor-pointer">
             <h3 className="font-semibold text-foreground mb-3 hover:text-primary transition-colors" data-testid={`text-poll-title-${poll.id}`}>
               {poll.title}
@@ -128,7 +128,14 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
         </Link>
         
         <div className="flex gap-2">
-          {isActive ? (
+          {poll.pollType === "invited" ? (
+            <Link href={`/invited-poll/${poll.id}/manage`} className="flex-1">
+              <Button className="w-full" data-testid={`button-manage-${poll.id}`}>
+                <UserCheck className="w-4 h-4 mr-2" />
+                Manage Poll
+              </Button>
+            </Link>
+          ) : isActive ? (
             <Link href={`/poll/${poll.id}/vote`} className="flex-1">
               <Button className="w-full" data-testid={`button-vote-${poll.id}`}>
                 <Vote className="w-4 h-4 mr-2" />
@@ -144,7 +151,7 @@ export function PollCard({ poll, showOwnership = false }: PollCardProps) {
             </Link>
           )}
           
-          <Link href={`/poll/${poll.id}`}>
+          <Link href={poll.pollType === "invited" ? `/invited-poll/${poll.id}/manage` : `/poll/${poll.id}`}>
             <Button variant="outline" size="sm" data-testid={`button-view-details-${poll.id}`}>
               Details
             </Button>
