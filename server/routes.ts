@@ -7,7 +7,7 @@ import { z } from "zod";
 import passport from "passport";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { sendPasswordResetEmail } from "./emailService";
+import { sendPasswordResetEmail, sendEmail } from "./emailService";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
@@ -1543,12 +1543,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const voteLink = `${baseUrl}/invited-vote/${voter.token}`;
           
           if (voter.email) {
-            const sgMail = require('@sendgrid/mail');
-            sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-            
-            await sgMail.send({
+            const result = await sendEmail({
               to: voter.email,
-              from: process.env.SENDGRID_FROM_EMAIL || 'noreply@ballotbox.com',
+              from: process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_VERIFIED_SENDER || 'noreply@ballotbox.com',
               subject: `You're invited to vote: ${poll.title}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -1570,9 +1567,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 </div>
               `,
             });
-            
-            await storage.updateInvitationStatus(voter.id, "sent");
-            sent++;
+
+            if (result.success) {
+              await storage.updateInvitationStatus(voter.id, "sent");
+              sent++;
+            } else {
+              console.error(`Failed to send invitation to ${voter.email}: ${result.error}`);
+              await storage.updateInvitationStatus(voter.id, "failed");
+              failed++;
+            }
           }
         } catch (emailError) {
           console.error(`Failed to send invitation to ${voter.email}:`, emailError);
