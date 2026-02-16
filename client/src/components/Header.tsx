@@ -254,12 +254,12 @@ export function Header() {
             ) : (
               <div className="hidden md:flex items-center space-x-2">
                 <Link href="/auth">
-                  <Button variant="outline" size="sm" data-testid="button-sign-in">
+                  <Button size="sm" data-testid="button-sign-in">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth?mode=register">
-                  <Button size="sm" data-testid="button-sign-up">
+                  <Button variant="outline" size="sm" data-testid="button-sign-up">
                     <UserPlus className="w-4 h-4 mr-2" />
                     Sign Up
                   </Button>
