@@ -50,9 +50,17 @@ function ProtectedRoute({ component: Component, ...props }: { component: React.C
   );
 }
 
-function Router() {
+function HomePage() {
   const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <Landing />;
+  }
+  
+  return isAuthenticated ? <Home /> : <Landing />;
+}
 
+function Router() {
   return (
     <Switch>
       {/* Public routes available to everyone */}
@@ -69,7 +77,7 @@ function Router() {
       <Route path="/auth/poll/:slug" component={(props) => <ProtectedRoute component={AuthenticatedPoll} {...props} />} />
       
       {/* Home route - show Landing for visitors, Home for logged-in users */}
-      <Route path="/" component={!isLoading && isAuthenticated ? Home : Landing} />
+      <Route path="/" component={HomePage} />
       
       {/* Protected routes - always registered but with auth checks */}
       <Route path="/create" component={(props) => <ProtectedRoute component={CreatePoll} {...props} />} />
