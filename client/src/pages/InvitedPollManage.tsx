@@ -225,7 +225,7 @@ export default function InvitedPollManage() {
   const price = currentTier?.price || 0;
 
   const pollEnded = poll ? new Date() > new Date(poll.endDate) : false;
-  const pendingInvitations = voters?.filter((v: any) => v.invitationStatus === "pending" && v.email)?.length || 0;
+  const pendingInvitations = voters?.filter((v: any) => v.invitationStatus === "pending" && (v.email || v.phone))?.length || 0;
 
   if (pollLoading) {
     return (
@@ -387,7 +387,7 @@ export default function InvitedPollManage() {
                     <Send className="w-5 h-5 text-blue-600" />
                     <div>
                       <p className="font-medium">{pendingInvitations} pending invitation{pendingInvitations > 1 ? 's' : ''}</p>
-                      <p className="text-sm text-muted-foreground">Send email invitations with unique voting links</p>
+                      <p className="text-sm text-muted-foreground">Send invitations via email and SMS with unique voting links</p>
                     </div>
                   </div>
                   <Button

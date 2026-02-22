@@ -8,6 +8,7 @@ import passport from "passport";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendPasswordResetEmail, sendEmail } from "./emailService";
+import { sendInvitationSms, isSmsConfigured } from "./smsService";
 import { createPaypalOrder, capturePaypalOrder, loadPaypalDefault } from "./paypal";
 import { db } from "./db";
 import { eq, sql, and } from "drizzle-orm";
@@ -1528,7 +1529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const voters = await storage.getInvitedVoters(req.params.id);
-      const pendingVoters = voters.filter(v => v.invitationStatus === "pending" && v.email);
+      const pendingVoters = voters.filter(v => v.invitationStatus === "pending" && (v.email || v.phone));
 
       if (pendingVoters.length === 0) {
         return res.status(400).json({ message: "No pending invitations to send" });
@@ -1541,11 +1542,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const voter of pendingVoters) {
         try {
           const voteLink = `${baseUrl}/invited-vote/${voter.token}`;
+          let voterSent = false;
           
           if (voter.email) {
             const result = await sendEmail({
               to: voter.email,
-              
               subject: `You're invited to vote: ${poll.title}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -1569,16 +1570,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
 
             if (result.success) {
-              await storage.updateInvitationStatus(voter.id, "sent");
-              sent++;
+              voterSent = true;
             } else {
-              console.error(`Failed to send invitation to ${voter.email}: ${result.error}`);
-              await storage.updateInvitationStatus(voter.id, "failed");
-              failed++;
+              console.error(`Failed to send email invitation to ${voter.email}: ${result.error}`);
             }
           }
-        } catch (emailError) {
-          console.error(`Failed to send invitation to ${voter.email}:`, emailError);
+
+          if (voter.phone && isSmsConfigured()) {
+            const smsResult = await sendInvitationSms(
+              voter.phone,
+              poll.title,
+              voteLink,
+              new Date(poll.endDate)
+            );
+
+            if (smsResult.success) {
+              voterSent = true;
+            } else {
+              console.error(`Failed to send SMS invitation to ${voter.phone}: ${smsResult.error}`);
+            }
+          }
+
+          if (voterSent) {
+            await storage.updateInvitationStatus(voter.id, "sent");
+            sent++;
+          } else {
+            await storage.updateInvitationStatus(voter.id, "failed");
+            failed++;
+          }
+        } catch (sendError) {
+          console.error(`Failed to send invitation to ${voter.email || voter.phone}:`, sendError);
           await storage.updateInvitationStatus(voter.id, "failed");
           failed++;
         }

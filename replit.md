@@ -113,3 +113,9 @@ Server state is handled by TanStack React Query with optimistic updates. Form st
 - Client module: `server/agentMailClient.ts`
 - Email service: `server/emailService.ts`
 - Inbox: Uses existing AgentMail inbox or creates one named "Ballot Box"
+
+## SMS Service
+- **Twilio**: SMS sending for poll invitations. Uses manual secret storage (user dismissed connector setup).
+- SMS service: `server/smsService.ts`
+- Secrets: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+- Used in: Invited poll invitation flow (sends SMS to voters with phone numbers)
