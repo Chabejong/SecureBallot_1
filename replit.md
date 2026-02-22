@@ -107,3 +107,9 @@ Server state is handled by TanStack React Query with optimistic updates. Form st
 - **Express.js**: Web application framework.
 - **React**: Frontend framework.
 - **Date-fns**: Date manipulation utilities.
+
+## Email Service
+- **AgentMail**: Email sending via AgentMail API (replaced SendGrid). Uses Replit connector integration for API key management.
+- Client module: `server/agentMailClient.ts`
+- Email service: `server/emailService.ts`
+- Inbox: Uses existing AgentMail inbox or creates one named "Ballot Box"

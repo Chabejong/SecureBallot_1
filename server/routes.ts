@@ -1545,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (voter.email) {
             const result = await sendEmail({
               to: voter.email,
-              from: process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_VERIFIED_SENDER || 'noreply@ballotbox.com',
+              
               subject: `You're invited to vote: ${poll.title}`,
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

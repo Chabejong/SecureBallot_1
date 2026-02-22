@@ -1,23 +1,53 @@
-// EmailService using SendGrid integration for password reset emails
-import { MailService } from '@sendgrid/mail';
+// EmailService using AgentMail integration for sending emails
+import { getUncachableAgentMailClient } from './agentMailClient';
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.SENDGRID_VERIFIED_SENDER;
+let ballotBoxInboxId: string | null = null;
 
-if (!SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+async function getOrCreateInbox(): Promise<string> {
+  const client = await getUncachableAgentMailClient();
+
+  if (ballotBoxInboxId) {
+    try {
+      await client.inboxes.get(ballotBoxInboxId);
+      return ballotBoxInboxId;
+    } catch {
+      ballotBoxInboxId = null;
+    }
+  }
+
+  const listResponse = await client.inboxes.list();
+  const inboxes = (listResponse as any)?.inboxes || [];
+
+  const ballotBoxInbox = inboxes.find((inbox: any) => inbox.displayName === 'Ballot Box');
+  if (ballotBoxInbox) {
+    ballotBoxInboxId = ballotBoxInbox.inboxId;
+    console.log(`Found Ballot Box inbox: ${ballotBoxInboxId}`);
+    return ballotBoxInboxId!;
+  }
+
+  try {
+    const newInbox = await client.inboxes.create({
+      displayName: 'Ballot Box',
+    });
+    const inboxData = newInbox as any;
+    ballotBoxInboxId = inboxData.inboxId;
+    console.log(`Created AgentMail inbox: ${ballotBoxInboxId}`);
+    return ballotBoxInboxId!;
+  } catch (createError: any) {
+    if (createError.statusCode === 403 && createError.body?.name === 'LimitExceededError') {
+      if (inboxes.length > 0) {
+        ballotBoxInboxId = inboxes[0].inboxId;
+        console.log(`Inbox limit reached. Using first available inbox: ${ballotBoxInboxId}`);
+        return ballotBoxInboxId!;
+      }
+    }
+    throw createError;
+  }
 }
-
-if (!SENDGRID_FROM_EMAIL) {
-  console.warn("SENDGRID_FROM_EMAIL not set. You need to set this to a verified sender email in your SendGrid account.");
-}
-
-const mailService = new MailService();
-mailService.setApiKey(SENDGRID_API_KEY);
 
 interface EmailParams {
   to: string;
-  from: string;
+  from?: string;
   subject: string;
   text?: string;
   html?: string;
@@ -25,9 +55,11 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<{ success: boolean; error?: string }> {
   try {
-    await mailService.send({
-      to: params.to,
-      from: params.from,
+    const client = await getUncachableAgentMailClient();
+    const inboxId = await getOrCreateInbox();
+
+    await client.inboxes.messages.send(inboxId, {
+      to: [params.to],
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
@@ -35,17 +67,25 @@ export async function sendEmail(params: EmailParams): Promise<{ success: boolean
     console.log(`Email sent successfully to ${params.to}`);
     return { success: true };
   } catch (error: any) {
-    console.error('SendGrid email error:', error);
-    
+    console.error('AgentMail email error:', error);
+
     let errorMessage = 'Failed to send email';
-    if (error.code === 401) {
-      errorMessage = 'SendGrid authentication failed. Please check your API key and sender email verification.';
-    } else if (error.code === 403) {
-      errorMessage = 'SendGrid permission denied. Please verify your sender email address in SendGrid.';
-    } else if (error.response?.body?.errors) {
-      errorMessage = error.response.body.errors.map((e: any) => e.message).join(', ');
+    if (error.statusCode === 401 || error.status === 401) {
+      errorMessage = 'AgentMail authentication failed. Please check your API key.';
+    } else if (error.statusCode === 403 || error.status === 403) {
+      const bodyMessage = error.body?.message || '';
+      if (bodyMessage.includes('bounced') || bodyMessage.includes('complained')) {
+        errorMessage = `Email delivery failed: ${bodyMessage}`;
+        console.warn(`Deliverability issue for ${params.to}: ${bodyMessage}`);
+      } else if (bodyMessage.includes('LimitExceeded')) {
+        errorMessage = 'AgentMail account limit exceeded.';
+      } else {
+        errorMessage = `AgentMail error: ${bodyMessage || 'Permission denied'}`;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
-    
+
     return { success: false, error: errorMessage };
   }
 }
@@ -58,10 +98,9 @@ export async function sendPasswordResetEmail(
   const domain = process.env.REPLIT_DEV_DOMAIN || 'localhost:5000';
   const protocol = process.env.NODE_ENV === 'production' ? 'https://' : 'http://';
   const resetUrl = `${protocol}${domain}/reset-password?token=${resetToken}`;
-  
-  
+
   const subject = 'Reset Your Password - Ballot Box';
-  
+
   const text = `
 Hello ${firstName || 'User'},
 
@@ -123,17 +162,8 @@ Ballot Box Team
     </div>
   `;
 
-  const fromEmail = SENDGRID_FROM_EMAIL || 'noreply@example.com';
-  
-  
-  if (!SENDGRID_FROM_EMAIL) {
-    console.error('SENDGRID_FROM_EMAIL not configured. Password reset email may fail.');
-  }
-
-  
   const result = await sendEmail({
     to: email,
-    from: fromEmail,
     subject,
     text,
     html,
