@@ -1,4 +1,4 @@
-// SMS Service using Twilio - connector integration with env var fallback
+// SMS Service using Twilio - env var credentials with connector fallback
 import twilio from 'twilio';
 
 interface TwilioCredentials {
@@ -6,7 +6,23 @@ interface TwilioCredentials {
   authKey: string;
   authSecret: string;
   phoneNumber: string;
-  source: 'connector' | 'env';
+  useApiKey: boolean;
+}
+
+function getEnvCredentials(): TwilioCredentials | null {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !phoneNumber) return null;
+
+  return {
+    accountSid,
+    authKey: accountSid,
+    authSecret: authToken,
+    phoneNumber,
+    useApiKey: false
+  };
 }
 
 async function getConnectorCredentials(): Promise<TwilioCredentials | null> {
@@ -41,42 +57,26 @@ async function getConnectorCredentials(): Promise<TwilioCredentials | null> {
       authKey: connectionSettings.settings.api_key,
       authSecret: connectionSettings.settings.api_key_secret,
       phoneNumber: connectionSettings.settings.phone_number,
-      source: 'connector'
+      useApiKey: true
     };
   } catch {
     return null;
   }
 }
 
-function getEnvCredentials(): TwilioCredentials | null {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
-  if (!accountSid || !authToken || !phoneNumber) return null;
-
-  return {
-    accountSid,
-    authKey: accountSid,
-    authSecret: authToken,
-    phoneNumber,
-    source: 'env'
-  };
-}
-
 async function getCredentials(): Promise<TwilioCredentials> {
-  const connectorCreds = await getConnectorCredentials();
-  if (connectorCreds) return connectorCreds;
-
   const envCreds = getEnvCredentials();
   if (envCreds) return envCreds;
 
-  throw new Error('Twilio not configured - no connector or environment credentials found');
+  const connectorCreds = await getConnectorCredentials();
+  if (connectorCreds) return connectorCreds;
+
+  throw new Error('Twilio not configured - no environment or connector credentials found');
 }
 
 async function getTwilioClient() {
   const creds = await getCredentials();
-  if (creds.source === 'connector') {
+  if (creds.useApiKey) {
     return twilio(creds.authKey, creds.authSecret, { accountSid: creds.accountSid });
   }
   return twilio(creds.accountSid, creds.authSecret);
