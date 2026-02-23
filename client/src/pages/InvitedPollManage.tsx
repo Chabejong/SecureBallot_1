@@ -286,101 +286,105 @@ export default function InvitedPollManage() {
           </TabsList>
 
           <TabsContent value="voters" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <div className="border rounded-lg p-6 space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Upload className="w-5 h-5" />
-                    Upload CSV
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">Upload a list of voters from a CSV file</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 justify-center" onClick={() => downloadTemplate("email")}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Email Template
-                  </Button>
-                  <Button variant="outline" className="flex-1 justify-center" onClick={() => downloadTemplate("phone")}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Phone Template
-                  </Button>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="hidden"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
-                    onClick={() => { uploadTypeRef.current = "email"; fileInputRef.current?.click(); }}
-                    disabled={addVotersMutation.isPending}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Emails
-                  </Button>
-                  <Button
-                    className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
-                    onClick={() => { uploadTypeRef.current = "phone"; fileInputRef.current?.click(); }}
-                    disabled={addVotersMutation.isPending}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Phones
-                  </Button>
-                </div>
-              </div>
+            {!pollEnded && (
+              <>
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <div className="border rounded-lg p-6 space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Upload className="w-5 h-5" />
+                        Upload CSV
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">Upload a list of voters from a CSV file</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 justify-center" onClick={() => downloadTemplate("email")}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Email Template
+                      </Button>
+                      <Button variant="outline" className="flex-1 justify-center" onClick={() => downloadTemplate("phone")}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Phone Template
+                      </Button>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCSVUpload}
+                      className="hidden"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
+                        onClick={() => { uploadTypeRef.current = "email"; fileInputRef.current?.click(); }}
+                        disabled={addVotersMutation.isPending}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Emails
+                      </Button>
+                      <Button
+                        className="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white"
+                        onClick={() => { uploadTypeRef.current = "phone"; fileInputRef.current?.click(); }}
+                        disabled={addVotersMutation.isPending}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Phones
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="border rounded-lg p-6 space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Plus className="w-5 h-5" />
-                    Add Manually
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">Type voter contacts one by one</p>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Email address"
-                    value={manualEmail}
-                    onChange={e => setManualEmail(e.target.value)}
-                    type="email"
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="Phone (optional)"
-                    value={manualPhone}
-                    onChange={e => setManualPhone(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button onClick={addManualVoter} size="icon" className="flex-shrink-0 bg-indigo-700 hover:bg-indigo-800 text-white h-10 w-10">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
+                  <div className="border rounded-lg p-6 space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Add Manually
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">Type voter contacts one by one</p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Email address"
+                        value={manualEmail}
+                        onChange={e => setManualEmail(e.target.value)}
+                        type="email"
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="Phone (optional)"
+                        value={manualPhone}
+                        onChange={e => setManualPhone(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={addManualVoter} size="icon" className="flex-shrink-0 bg-indigo-700 hover:bg-indigo-800 text-white h-10 w-10">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
 
-                {manualVoters.length > 0 && (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {manualVoters.map((v, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2">
-                        <div className="flex items-center gap-3">
-                          {v.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{v.email}</span>}
-                          {v.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{v.phone}</span>}
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={() => removeManualVoter(i)} className="h-6 w-6 p-0">
-                          <Trash2 className="w-3 h-3" />
+                    {manualVoters.length > 0 && (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {manualVoters.map((v, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm bg-muted/50 rounded px-3 py-2">
+                            <div className="flex items-center gap-3">
+                              {v.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{v.email}</span>}
+                              {v.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{v.phone}</span>}
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => removeManualVoter(i)} className="h-6 w-6 p-0">
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button onClick={submitManualVoters} className="w-full bg-indigo-700 hover:bg-indigo-800 text-white" disabled={addVotersMutation.isPending}>
+                          {addVotersMutation.isPending ? "Adding..." : `Add ${manualVoters.length} Voter${manualVoters.length > 1 ? 's' : ''}`}
                         </Button>
                       </div>
-                    ))}
-                    <Button onClick={submitManualVoters} className="w-full bg-indigo-700 hover:bg-indigo-800 text-white" disabled={addVotersMutation.isPending}>
-                      {addVotersMutation.isPending ? "Adding..." : `Add ${manualVoters.length} Voter${manualVoters.length > 1 ? 's' : ''}`}
-                    </Button>
+                    )}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
 
-            {pendingInvitations > 0 && (
+            {!pollEnded && pendingInvitations > 0 && (
               <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -443,15 +447,17 @@ export default function InvitedPollManage() {
                                   <><Clock className="w-3 h-3 mr-1" />Pending</>
                                 )}
                               </Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                                onClick={() => deleteVoterMutation.mutate(voter.id)}
-                                disabled={deleteVoterMutation.isPending}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
+                              {!pollEnded && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() => deleteVoterMutation.mutate(voter.id)}
+                                  disabled={deleteVoterMutation.isPending}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
                             </>
                           )}
                         </div>
