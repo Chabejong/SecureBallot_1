@@ -1,53 +1,96 @@
-// SMS Service using Twilio connector integration
+// SMS Service using Twilio - connector integration with env var fallback
 import twilio from 'twilio';
 
-async function getCredentials() {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? 'repl ' + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL
-    : null;
+interface TwilioCredentials {
+  accountSid: string;
+  authKey: string;
+  authSecret: string;
+  phoneNumber: string;
+  source: 'connector' | 'env';
+}
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
-  }
+async function getConnectorCredentials(): Promise<TwilioCredentials | null> {
+  try {
+    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+    if (!hostname) return null;
 
-  const connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=twilio',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+    const xReplitToken = process.env.REPL_IDENTITY
+      ? 'repl ' + process.env.REPL_IDENTITY
+      : process.env.WEB_REPL_RENEWAL
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL
+      : null;
+
+    if (!xReplitToken) return null;
+
+    const connectionSettings = await fetch(
+      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=twilio',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'X_REPLIT_TOKEN': xReplitToken
+        }
       }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+    ).then(res => res.json()).then(data => data.items?.[0]);
 
-  if (!connectionSettings || (!connectionSettings.settings.account_sid || !connectionSettings.settings.api_key || !connectionSettings.settings.api_key_secret)) {
-    throw new Error('Twilio not connected');
+    if (!connectionSettings?.settings?.account_sid || !connectionSettings?.settings?.api_key || !connectionSettings?.settings?.api_key_secret) {
+      return null;
+    }
+
+    return {
+      accountSid: connectionSettings.settings.account_sid,
+      authKey: connectionSettings.settings.api_key,
+      authSecret: connectionSettings.settings.api_key_secret,
+      phoneNumber: connectionSettings.settings.phone_number,
+      source: 'connector'
+    };
+  } catch {
+    return null;
   }
+}
+
+function getEnvCredentials(): TwilioCredentials | null {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !phoneNumber) return null;
+
   return {
-    accountSid: connectionSettings.settings.account_sid,
-    apiKey: connectionSettings.settings.api_key,
-    apiKeySecret: connectionSettings.settings.api_key_secret,
-    phoneNumber: connectionSettings.settings.phone_number
+    accountSid,
+    authKey: accountSid,
+    authSecret: authToken,
+    phoneNumber,
+    source: 'env'
   };
 }
 
+async function getCredentials(): Promise<TwilioCredentials> {
+  const connectorCreds = await getConnectorCredentials();
+  if (connectorCreds) return connectorCreds;
+
+  const envCreds = getEnvCredentials();
+  if (envCreds) return envCreds;
+
+  throw new Error('Twilio not configured - no connector or environment credentials found');
+}
+
 async function getTwilioClient() {
-  const { accountSid, apiKey, apiKeySecret } = await getCredentials();
-  return twilio(apiKey, apiKeySecret, { accountSid });
+  const creds = await getCredentials();
+  if (creds.source === 'connector') {
+    return twilio(creds.authKey, creds.authSecret, { accountSid: creds.accountSid });
+  }
+  return twilio(creds.accountSid, creds.authSecret);
 }
 
 async function getTwilioFromPhoneNumber() {
-  const { phoneNumber } = await getCredentials();
-  return phoneNumber;
+  const creds = await getCredentials();
+  return creds.phoneNumber;
 }
 
 export async function isSmsConfigured(): Promise<boolean> {
   try {
     const creds = await getCredentials();
-    return !!(creds.accountSid && creds.apiKey && creds.apiKeySecret && creds.phoneNumber);
+    return !!(creds.accountSid && creds.authKey && creds.authSecret && creds.phoneNumber);
   } catch {
     return false;
   }
