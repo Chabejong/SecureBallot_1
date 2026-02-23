@@ -440,7 +440,7 @@ export default function CreatePoll() {
                   name="pollType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Poll Type</FormLabel>
+                      <FormLabel>Select Poll Type</FormLabel>
                       {/* Mobile: dropdown select */}
                       <div className="md:hidden">
                         <Select value={field.value} onValueChange={field.onChange}>
