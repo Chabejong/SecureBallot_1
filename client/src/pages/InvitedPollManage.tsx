@@ -340,7 +340,7 @@ export default function InvitedPollManage() {
                         <Plus className="w-5 h-5" />
                         Add Manually
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1">Type voter contacts one by one</p>
+                      <p className="text-sm text-muted-foreground mt-1">Enter an email or phone number for each voter</p>
                     </div>
                     <div className="flex gap-2 items-center">
                       <Input
@@ -351,7 +351,7 @@ export default function InvitedPollManage() {
                         className="flex-1"
                       />
                       <Input
-                        placeholder="Phone (optional)"
+                        placeholder="Phone number"
                         value={manualPhone}
                         onChange={e => setManualPhone(e.target.value)}
                         className="flex-1"
