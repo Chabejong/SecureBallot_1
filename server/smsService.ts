@@ -1,24 +1,56 @@
-// SMS Service using Twilio for sending text messages
+// SMS Service using Twilio connector integration
 import twilio from 'twilio';
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+async function getCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL
+    : null;
 
-let client: twilio.Twilio | null = null;
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  }
 
-function getClient(): twilio.Twilio {
-  if (!accountSid || !authToken) {
-    throw new Error('Twilio credentials not configured');
+  const connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=twilio',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!connectionSettings || (!connectionSettings.settings.account_sid || !connectionSettings.settings.api_key || !connectionSettings.settings.api_key_secret)) {
+    throw new Error('Twilio not connected');
   }
-  if (!client) {
-    client = twilio(accountSid, authToken);
-  }
-  return client;
+  return {
+    accountSid: connectionSettings.settings.account_sid,
+    apiKey: connectionSettings.settings.api_key,
+    apiKeySecret: connectionSettings.settings.api_key_secret,
+    phoneNumber: connectionSettings.settings.phone_number
+  };
 }
 
-export function isSmsConfigured(): boolean {
-  return !!(accountSid && authToken && fromNumber);
+async function getTwilioClient() {
+  const { accountSid, apiKey, apiKeySecret } = await getCredentials();
+  return twilio(apiKey, apiKeySecret, { accountSid });
+}
+
+async function getTwilioFromPhoneNumber() {
+  const { phoneNumber } = await getCredentials();
+  return phoneNumber;
+}
+
+export async function isSmsConfigured(): Promise<boolean> {
+  try {
+    const creds = await getCredentials();
+    return !!(creds.accountSid && creds.apiKey && creds.apiKeySecret && creds.phoneNumber);
+  } catch {
+    return false;
+  }
 }
 
 export async function sendSms(
@@ -26,11 +58,13 @@ export async function sendSms(
   body: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!isSmsConfigured()) {
+    const configured = await isSmsConfigured();
+    if (!configured) {
       return { success: false, error: 'SMS service not configured' };
     }
 
-    const twilioClient = getClient();
+    const twilioClient = await getTwilioClient();
+    const fromNumber = await getTwilioFromPhoneNumber();
     const normalizedTo = to.startsWith('+') ? to : `+${to}`;
 
     await twilioClient.messages.create({

@@ -1576,7 +1576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          if (voter.phone && isSmsConfigured()) {
+          if (voter.phone && await isSmsConfigured()) {
             const smsResult = await sendInvitationSms(
               voter.phone,
               poll.title,
