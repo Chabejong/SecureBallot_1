@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Mail, Users } from "lucide-react";
 import PricingPayPalButton from "@/components/PricingPayPalButton";
 
 const pricingTiers = [
@@ -151,6 +151,80 @@ const pricingTiers = [
   }
 ];
 
+const invitedPollTiers = [
+  {
+    name: "Starter Invite",
+    price: "€5",
+    description: "For small private votes",
+    invitees: "Up to 20 invitees per poll",
+    features: [
+      "Up to 20 invitees per poll",
+      "Email invitations",
+      "Unique voter links",
+      "Real-time results",
+      "One-time purchase per poll"
+    ],
+    isPopular: false,
+    amount: "5.00"
+  },
+  {
+    name: "Group Invite",
+    price: "€15",
+    description: "For clubs and small organisations",
+    invitees: "Up to 100 invitees per poll",
+    features: [
+      "Up to 100 invitees per poll",
+      "Email & SMS invitations",
+      "Unique voter links",
+      "Real-time results",
+      "CSV voter import",
+      "Participation tracking",
+      "One-time purchase per poll"
+    ],
+    isPopular: true,
+    amount: "15.00"
+  },
+  {
+    name: "Community Invite",
+    price: "€35",
+    description: "For larger communities and events",
+    invitees: "Up to 500 invitees per poll",
+    features: [
+      "Up to 500 invitees per poll",
+      "Email & SMS invitations",
+      "Unique voter links",
+      "Real-time results",
+      "CSV voter import",
+      "Participation tracking",
+      "CSV export of results",
+      "Priority support",
+      "One-time purchase per poll"
+    ],
+    isPopular: false,
+    amount: "35.00"
+  },
+  {
+    name: "Organisation Invite",
+    price: "€75",
+    description: "For large-scale private elections",
+    invitees: "Unlimited invitees per poll",
+    features: [
+      "Unlimited invitees per poll",
+      "Email & SMS invitations",
+      "Unique voter links",
+      "Real-time results",
+      "CSV voter import",
+      "Participation tracking",
+      "CSV export of results",
+      "Custom branding",
+      "Dedicated support",
+      "One-time purchase per poll"
+    ],
+    isPopular: false,
+    amount: "75.00"
+  }
+];
+
 export default function Pricing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
@@ -236,6 +310,73 @@ export default function Pricing() {
               </CardFooter>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-20">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+              <Mail className="h-4 w-4" />
+              Invited Only Polls
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
+              Private Invitation Plans
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Run polls where only your invited voters can participate. Each plan is a one-time purchase per poll — no monthly commitment required.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {invitedPollTiers.map((tier) => (
+              <Card
+                key={tier.name}
+                className={`relative ${tier.isPopular ? 'ring-2 ring-purple-500 scale-105' : ''} transition-all duration-300 hover:shadow-lg`}
+                data-testid={`card-invited-${tier.name.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {tier.isPopular && (
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white">
+                    Most Popular
+                  </Badge>
+                )}
+
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-2 w-10 h-10 bg-purple-100 dark:bg-purple-900/40 rounded-full flex items-center justify-center">
+                    <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <CardTitle className="text-xl font-bold">{tier.name}</CardTitle>
+                  <div className="mt-3">
+                    <span className="text-4xl font-bold text-gray-900 dark:text-white">{tier.price}</span>
+                    <span className="text-gray-500 dark:text-gray-400"> / poll</span>
+                  </div>
+                  <CardDescription className="mt-2">{tier.description}</CardDescription>
+                  <div className="mt-3 text-sm font-medium text-purple-600 dark:text-purple-400">
+                    {tier.invitees}
+                  </div>
+                </CardHeader>
+
+                <CardContent>
+                  <ul className="space-y-3">
+                    {tier.features.map((feature, i) => (
+                      <li key={i} className="flex items-center">
+                        <Check className="h-4 w-4 text-purple-500 mr-3 flex-shrink-0" />
+                        <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+
+                <CardFooter>
+                  <div className="w-full">
+                    <PricingPayPalButton
+                      amount={tier.amount}
+                      tier={`invited-${tier.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      className="w-full"
+                    />
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         </div>
 
         <div className="mt-16 text-center">
