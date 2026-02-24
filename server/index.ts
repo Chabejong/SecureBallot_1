@@ -124,6 +124,19 @@ const runCleanupTask = async () => {
   // Schedule daily cleanup task (24 hours = 24 * 60 * 60 * 1000 ms)
   const DAILY_INTERVAL = 24 * 60 * 60 * 1000;
   
+  // Validate Twilio setup on startup
+  setTimeout(async () => {
+    try {
+      const { validateTwilioSetup } = await import('./smsService');
+      const result = await validateTwilioSetup();
+      if (!result.valid) {
+        log(`WARNING: Twilio SMS setup issue - ${result.error}`);
+      }
+    } catch (e: any) {
+      log(`Twilio validation skipped: ${e.message}`);
+    }
+  }, 2000);
+
   // Run cleanup once on startup (after a short delay to ensure DB is ready)
   setTimeout(async () => {
     log("Running initial cleanup task...");

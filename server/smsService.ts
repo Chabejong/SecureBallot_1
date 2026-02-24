@@ -96,6 +96,39 @@ export async function isSmsConfigured(): Promise<boolean> {
   }
 }
 
+export async function validateTwilioSetup(): Promise<{ valid: boolean; fromNumber?: string; error?: string }> {
+  try {
+    const creds = await getCredentials();
+    const fromNumber = creds.phoneNumber;
+    console.log(`[SMS] Twilio FROM number configured as: ${fromNumber}`);
+
+    if (!fromNumber || !fromNumber.startsWith('+')) {
+      return { valid: false, fromNumber, error: `Invalid FROM number format: "${fromNumber}". Must start with +` };
+    }
+
+    const client = creds.useApiKey
+      ? twilio(creds.authKey, creds.authSecret, { accountSid: creds.accountSid })
+      : twilio(creds.accountSid, creds.authSecret);
+
+    const incomingNumbers = await client.incomingPhoneNumbers.list({ phoneNumber: fromNumber, limit: 1 });
+    if (incomingNumbers.length === 0) {
+      return { valid: false, fromNumber, error: `Phone number ${fromNumber} is NOT a Twilio number on your account. Please buy a number at twilio.com/console/phone-numbers or update TWILIO_PHONE_NUMBER.` };
+    }
+
+    const smsCapable = incomingNumbers[0].capabilities?.sms;
+    if (!smsCapable) {
+      return { valid: false, fromNumber, error: `Phone number ${fromNumber} exists on your Twilio account but is NOT SMS-capable.` };
+    }
+
+    console.log(`[SMS] Twilio setup validated: ${fromNumber} is a valid SMS-capable Twilio number`);
+    return { valid: true, fromNumber };
+  } catch (error: any) {
+    const msg = error.message || 'Unknown error';
+    console.error(`[SMS] Twilio validation failed:`, msg);
+    return { valid: false, error: `Twilio validation error: ${msg}` };
+  }
+}
+
 export async function sendSms(
   to: string,
   body: string
