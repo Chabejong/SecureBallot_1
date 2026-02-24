@@ -107,6 +107,7 @@ export interface IStorage {
   addInvitedVoters(pollId: string, voters: Array<{email?: string; phone?: string}>): Promise<InvitedVoter[]>;
   getInvitedVoters(pollId: string): Promise<InvitedVoter[]>;
   getInvitedVoterByToken(token: string): Promise<InvitedVoter | undefined>;
+  getInvitedVoterByShortCode(shortCode: string): Promise<InvitedVoter | undefined>;
   deleteInvitedVoter(voterId: string, pollId: string): Promise<void>;
   markInvitedVoterAsVoted(voterId: string): Promise<void>;
   updateInvitationStatus(voterId: string, status: string): Promise<void>;
@@ -918,11 +919,17 @@ export class DatabaseStorage implements IStorage {
 
   // Invited voter operations
   async addInvitedVoters(pollId: string, voters: Array<{email?: string; phone?: string}>): Promise<InvitedVoter[]> {
+    const generateShortCode = () => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+      return Array.from(crypto.randomBytes(8)).map(b => chars[b % chars.length]).join('');
+    };
+
     const voterRecords = voters.map(v => ({
       pollId,
       email: v.email || null,
       phone: v.phone || null,
       token: crypto.randomBytes(32).toString("hex"),
+      shortCode: generateShortCode(),
       hasVoted: false,
       invitationStatus: "pending" as const,
     }));
@@ -944,6 +951,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(invitedVoters)
       .where(eq(invitedVoters.token, token));
+    return voter;
+  }
+
+  async getInvitedVoterByShortCode(shortCode: string): Promise<InvitedVoter | undefined> {
+    const [voter] = await db
+      .select()
+      .from(invitedVoters)
+      .where(eq(invitedVoters.shortCode, shortCode));
     return voter;
   }
 

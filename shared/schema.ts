@@ -262,6 +262,7 @@ export const invitedVoters = pgTable("invited_voters", {
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 30 }),
   token: varchar("token", { length: 64 }).notNull().unique(),
+  shortCode: varchar("short_code", { length: 10 }).unique(),
   hasVoted: boolean("has_voted").notNull().default(false),
   votedAt: timestamp("voted_at"),
   invitationSentAt: timestamp("invitation_sent_at"),

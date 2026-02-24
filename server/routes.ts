@@ -1409,6 +1409,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Short link redirect — /v/:code → /invited-vote/:token
+  app.get('/v/:code', async (req, res) => {
+    try {
+      const voter = await storage.getInvitedVoterByShortCode(req.params.code);
+      if (!voter) {
+        return res.redirect('/?error=invalid-link');
+      }
+      return res.redirect(`/invited-vote/${voter.token}`);
+    } catch (error) {
+      console.error('Short link redirect error:', error);
+      return res.redirect('/');
+    }
+  });
+
   // Token-based voting (public - no auth required)
   app.get('/api/invited-vote/:token', async (req, res) => {
     try {
@@ -1542,6 +1556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const voter of pendingVoters) {
         try {
           const voteLink = `${baseUrl}/invited-vote/${voter.token}`;
+          const smsVoteLink = voter.shortCode
+            ? `${baseUrl}/v/${voter.shortCode}`
+            : voteLink;
           let voterSent = false;
           
           if (voter.email) {
@@ -1580,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const smsResult = await sendInvitationSms(
               voter.phone,
               poll.title,
-              voteLink,
+              smsVoteLink,
               new Date(poll.endDate)
             );
 
