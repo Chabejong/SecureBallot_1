@@ -249,7 +249,7 @@ export default function Pricing() {
         <div className="mt-20">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-              Pricing Tiers
+              Pricing Tiers for Invited Only
             </h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               Cost is based on the number of invited voters
