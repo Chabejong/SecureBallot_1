@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2, Crown, CreditCard, Heart } from "lucide-react";
+import { CheckCircle, Users, Globe, UserCheck, Camera, Calendar, Download, Smartphone, Trash2, Shield, QrCode, Share2, Crown, CreditCard, Heart, Mail, MessageSquare, Upload, Link } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -164,9 +164,97 @@ export default function HowItWorks() {
                     Invited Only
                   </Badge>
                   <div className="flex-1">
-                    <p className="text-muted-foreground">
-                      The most private option. Only specific people you invite via email or username can access and vote in the poll.
+                    <p className="text-muted-foreground mb-4">
+                      The most private option. Only specific people you personally invite can access and vote. Each voter receives a unique private link delivered by email or SMS — no one else can use it.
                     </p>
+
+                    {/* How to add voters */}
+                    <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 mb-3">
+                      <p className="font-medium text-accent mb-3">📋 How to Add Voters:</p>
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <div className="flex items-start gap-3">
+                          <Upload className="w-4 h-4 mt-0.5 text-accent flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-foreground">CSV Upload</p>
+                            <p>Upload a spreadsheet with your voters' names, email addresses, and optionally phone numbers. The app processes the list and sends invitations automatically.</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <UserCheck className="w-4 h-4 mt-0.5 text-accent flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-foreground">Manual Entry</p>
+                            <p>Add voters one by one by typing their name, email, and optional phone number directly in the poll management panel.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Email invitations */}
+                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-3">
+                      <p className="font-medium text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
+                        <Mail className="w-4 h-4" /> Email Invitations
+                      </p>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>Every invited voter with an email address receives a personalised invitation sent from <strong>Ballot Box</strong>. The email includes:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>The poll question and a brief description</li>
+                          <li>A <strong>unique, private voting link</strong> generated just for them</li>
+                          <li>The poll's closing date and time</li>
+                        </ul>
+                        <p className="mt-2">The unique link works on any device and browser — voters do not need an account to vote. Once they click their link and cast a vote, the link cannot be reused.</p>
+                      </div>
+                    </div>
+
+                    {/* SMS invitations */}
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-3">
+                      <p className="font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" /> SMS Invitations
+                      </p>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>If a voter has a phone number on record, they also receive an SMS alongside the email. The text message contains:</p>
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>A short summary of the poll</li>
+                          <li>Their personal voting link</li>
+                          <li>The poll deadline</li>
+                        </ul>
+                        <p className="mt-2">SMS ensures voters are reached even if they miss the email, maximising participation. At least one delivery method (email or SMS) must succeed for the invitation to be counted as sent.</p>
+                      </div>
+                    </div>
+
+                    {/* Unique links */}
+                    <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mb-3">
+                      <p className="font-medium text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
+                        <Link className="w-4 h-4" /> Unique Voter Links
+                      </p>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <ul className="list-disc list-inside space-y-1 ml-2">
+                          <li>Each voter receives their own one-time link — no two voters share the same link</li>
+                          <li>Links are cryptographically secure and cannot be guessed</li>
+                          <li>Once a vote is submitted the link is locked — it cannot be used again</li>
+                          <li>Voters who haven't voted yet can return to their link at any time before the poll closes</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Pricing tiers */}
+                    <div className="bg-muted/30 border border-border rounded-lg p-4">
+                      <p className="font-medium text-foreground mb-3">💳 Invited Only Pricing (per poll):</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                        {[
+                          { price: "€25", range: "0 – 100 voters" },
+                          { price: "€50", range: "101 – 250 voters" },
+                          { price: "€100", range: "251 – 700 voters" },
+                          { price: "€150", range: "701 – 1,000 voters" },
+                          { price: "€200", range: "1,001 – 2,000 voters" },
+                        ].map((tier) => (
+                          <div key={tier.price} className="flex flex-col items-center p-3 bg-background border border-border rounded-lg text-center">
+                            <span className="font-bold text-blue-900 dark:text-blue-300 text-lg">{tier.price}</span>
+                            <span className="text-muted-foreground text-xs mt-1">{tier.range}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">Each plan is a one-time purchase per poll. See the Pricing page for full details.</p>
+                    </div>
                   </div>
                 </div>
               </div>
