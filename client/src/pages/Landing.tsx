@@ -29,6 +29,12 @@ export default function Landing() {
             <span className="text-xs font-medium">End-to-End Encrypted</span>
           </div>
 
+          <img
+            src="/ballot-box.png"
+            alt="Ballot Box - Secure Community Voting"
+            className="w-28 h-28 rounded-2xl shadow-2xl object-cover border-2 border-white/20 mb-4"
+          />
+
           <h1 className="text-3xl font-bold mb-3 leading-tight">
             Secure Community Voting{" "}
             <span className="text-yellow-300">Made Simple</span>
