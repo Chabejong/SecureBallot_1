@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles, Share2 } from "lucide-react";
+import { CheckCircle, Shield, Menu, LogOut, User, Plus, X, UserPlus, BarChart3, Sparkles, Share2, Home } from "lucide-react";
 import cn3mLogo from "@/assets/cn3m-logo.png";
 import { queryClient } from "@/lib/queryClient";
 import {
@@ -158,6 +158,14 @@ export function Header() {
                   </Button>
                 </Link>
               </>
+            )}
+            {!isAuthenticated && (
+              <Link href="/landing">
+                <Button variant="ghost" className={navButtonClass("/landing")} data-testid="link-home-guest">
+                  <Home className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+              </Link>
             )}
             <Link href="/how-it-works">
               <Button variant="ghost" className={navButtonClass("/how-it-works")} data-testid="link-how-it-works">
@@ -380,6 +388,15 @@ export function Header() {
                     </>
                   ) : (
                     <>
+                      <SheetClose asChild>
+                        <Link href="/landing">
+                          <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-home-guest">
+                            <Home className="w-4 h-4 mr-3" />
+                            Home
+                          </Button>
+                        </Link>
+                      </SheetClose>
+
                       <SheetClose asChild>
                         <Link href="/how-it-works">
                           <Button variant="ghost" className="w-full justify-start h-12" data-testid="link-mobile-how-it-works-guest">
