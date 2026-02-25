@@ -127,7 +127,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" aria-label="Home - CN³M Ballot Box">
+          <Link href="/landing" aria-label="Home - CN³M Ballot Box">
             <div className="flex items-center space-x-3 cursor-pointer" data-testid="link-home">
               <img 
                 src={cn3mLogo} 
@@ -143,8 +143,8 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2">
-            <Link href={isAuthenticated ? "/" : "/landing"}>
-              <Button variant="ghost" className={navButtonClass(isAuthenticated ? "/" : "/landing")} data-testid="link-home">
+            <Link href="/landing">
+              <Button variant="ghost" className={navButtonClass("/landing")} data-testid="link-home">
                 <Home className="w-4 h-4 mr-2" />
                 Home
               </Button>
@@ -330,7 +330,7 @@ export function Header() {
                       
                       {/* Navigation Links */}
                       <SheetClose asChild>
-                        <Link href="/">
+                        <Link href="/landing">
                           <Button variant="ghost" className="w-full justify-start h-12 text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-home">
                             <Home className="w-4 h-4 mr-3" />
                             Home
