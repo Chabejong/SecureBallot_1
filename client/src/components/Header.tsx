@@ -143,6 +143,12 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-2">
+            <Link href={isAuthenticated ? "/" : "/landing"}>
+              <Button variant="ghost" className={navButtonClass(isAuthenticated ? "/" : "/landing")} data-testid="link-home">
+                <Home className="w-4 h-4 mr-2" />
+                Home
+              </Button>
+            </Link>
             {isAuthenticated && (
               <>
                 <Link href="/">
@@ -158,14 +164,6 @@ export function Header() {
                   </Button>
                 </Link>
               </>
-            )}
-            {!isAuthenticated && (
-              <Link href="/landing">
-                <Button variant="ghost" className={navButtonClass("/landing")} data-testid="link-home-guest">
-                  <Home className="w-4 h-4 mr-2" />
-                  Home
-                </Button>
-              </Link>
             )}
             <Link href="/how-it-works">
               <Button variant="ghost" className={navButtonClass("/how-it-works")} data-testid="link-how-it-works">
@@ -331,6 +329,15 @@ export function Header() {
                       </div>
                       
                       {/* Navigation Links */}
+                      <SheetClose asChild>
+                        <Link href="/">
+                          <Button variant="ghost" className="w-full justify-start h-12 text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-home">
+                            <Home className="w-4 h-4 mr-3" />
+                            Home
+                          </Button>
+                        </Link>
+                      </SheetClose>
+
                       <SheetClose asChild>
                         <Link href="/">
                           <Button variant="ghost" className="w-full justify-start h-12 text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200" data-testid="link-mobile-polls">
