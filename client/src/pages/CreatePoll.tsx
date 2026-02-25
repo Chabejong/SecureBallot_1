@@ -452,20 +452,23 @@ export default function CreatePoll() {
                           <SelectContent>
                             <SelectItem value="public">
                               <div className="flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-primary" />
-                                <span>Public Poll — Open to everyone</span>
+                                <Globe className="w-4 h-4 text-blue-600" />
+                                <span className="text-blue-600 font-medium">Public Poll</span>
+                                <span className="text-muted-foreground">— Open to everyone</span>
                               </div>
                             </SelectItem>
                             <SelectItem value="members">
                               <div className="flex items-center gap-2">
-                                <Users className="w-4 h-4 text-primary" />
-                                <span>Members Only — Registered members</span>
+                                <Users className="w-4 h-4 text-purple-600" />
+                                <span className="text-purple-600 font-medium">Members Only</span>
+                                <span className="text-muted-foreground">— Registered members</span>
                               </div>
                             </SelectItem>
                             <SelectItem value="invited">
                               <div className="flex items-center gap-2">
-                                <UserCheck className="w-4 h-4 text-primary" />
-                                <span>Invited Only — Specific participants</span>
+                                <UserCheck className="w-4 h-4 text-orange-500" />
+                                <span className="text-orange-500 font-medium">Invited Only</span>
+                                <span className="text-muted-foreground">— Specific participants</span>
                               </div>
                             </SelectItem>
                           </SelectContent>
@@ -474,9 +477,9 @@ export default function CreatePoll() {
                       {/* Desktop: card selection */}
                       <div className="hidden md:grid md:grid-cols-3 gap-4">
                         {[
-                          { value: "public", icon: Globe, label: "Public Poll", desc: "Open to everyone" },
-                          { value: "members", icon: Users, label: "Members Only", desc: "Registered members" },
-                          { value: "invited", icon: UserCheck, label: "Invited Only", desc: "Specific participants" }
+                          { value: "public", icon: Globe, label: "Public Poll", desc: "Open to everyone", color: "text-blue-600", checked: "peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-950/30" },
+                          { value: "members", icon: Users, label: "Members Only", desc: "Registered members", color: "text-purple-600", checked: "peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-950/30" },
+                          { value: "invited", icon: UserCheck, label: "Invited Only", desc: "Specific participants", color: "text-orange-500", checked: "peer-checked:border-orange-400 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-950/30" }
                         ].map((type) => (
                           <div key={type.value} className="relative">
                             <input
@@ -490,10 +493,10 @@ export default function CreatePoll() {
                             />
                             <label
                               htmlFor={type.value}
-                              className="flex flex-col items-center p-4 border border-border rounded-lg cursor-pointer hover:bg-muted/30 peer-checked:border-primary peer-checked:bg-primary/5 transition-colors"
+                              className={`flex flex-col items-center p-4 border border-border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors ${type.checked}`}
                             >
-                              <type.icon className="w-6 h-6 text-primary mb-2" />
-                              <span className="font-medium text-foreground">{type.label}</span>
+                              <type.icon className={`w-6 h-6 mb-2 ${type.color}`} />
+                              <span className={`font-medium ${type.color}`}>{type.label}</span>
                               <span className="text-xs text-muted-foreground text-center">{type.desc}</span>
                             </label>
                           </div>
