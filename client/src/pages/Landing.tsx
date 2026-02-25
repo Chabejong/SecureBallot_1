@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { Shield, CheckCircle, LogIn, Info, Tag } from "lucide-react";
+import { Shield, Info, Tag } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 
@@ -127,25 +127,7 @@ export default function Landing() {
 
         <footer className="bg-card border-t border-border py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid md:grid-cols-4 gap-8">
-              <div className="md:col-span-2">
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <span className="text-xl font-bold text-foreground">
-                    Ballot Box
-                  </span>
-                </div>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  Empowering communities with secure, transparent, and accessible
-                  voting technology. Every voice matters, every vote counts.
-                </p>
-                <div className="inline-flex items-center bg-gradient-to-r from-secondary to-primary text-white rounded-full px-4 py-2">
-                  <Shield className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">End-to-End Encrypted</span>
-                </div>
-              </div>
+            <div className="grid md:grid-cols-2 gap-8">
               <div>
                 <h3 className="font-semibold text-foreground mb-4">Platform</h3>
                 <ul className="space-y-2">
