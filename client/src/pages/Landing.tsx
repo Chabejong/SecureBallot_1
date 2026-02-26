@@ -19,12 +19,12 @@ export default function Landing() {
   return (
     <>
       {/* ── MOBILE: single-screen static layout ── */}
-      <div className="flex flex-col h-screen overflow-hidden md:hidden bg-background">
+      <div className="flex flex-col md:hidden bg-background" style={{ height: "100dvh", overflow: "hidden" }}>
         <Header />
 
-        {/* Hero fills remaining height */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-primary via-primary/95 to-secondary text-white px-6 text-center">
-          <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 mb-4">
+        {/* Hero fills remaining height, no overflow */}
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary via-primary/95 to-secondary text-white px-6 text-center">
+          <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-3 py-1 mb-3">
             <Shield className="w-3 h-3 mr-1.5" />
             <span className="text-xs font-medium">End-to-End Encrypted</span>
           </div>
@@ -32,22 +32,22 @@ export default function Landing() {
           <img
             src="/ballot-box.png"
             alt="Ballot Box - Secure Community Voting"
-            className="w-28 h-28 rounded-2xl shadow-2xl object-cover border-2 border-white/20 mb-4"
+            className="w-24 h-24 rounded-2xl shadow-2xl object-cover border-2 border-white/20 mb-3"
           />
 
-          <h1 className="text-3xl font-bold mb-3 leading-tight">
+          <h1 className="text-2xl font-bold mb-2 leading-tight">
             Secure Community Voting{" "}
             <span className="text-yellow-300">Made Simple</span>
           </h1>
 
-          <p className="text-sm text-white/85 mb-6 max-w-xs leading-relaxed">
+          <p className="text-sm text-white/85 mb-5 max-w-xs leading-relaxed">
             Empower your community with transparent, secure, and accessible
             voting. Every voice is heard.
           </p>
 
           <Button
             size="lg"
-            className="cta-create-poll border-0 px-8 py-3 text-base rounded-xl w-full max-w-xs mb-4"
+            className="cta-create-poll border-0 px-8 py-3 text-base rounded-xl w-full max-w-xs mb-3"
             onClick={handleCreatePoll}
             data-testid="button-create-poll"
           >
@@ -63,7 +63,7 @@ export default function Landing() {
         </div>
 
         {/* Mini footer */}
-        <div className="bg-card border-t border-border px-4 py-3 flex items-center justify-between">
+        <div className="bg-card border-t border-border px-4 py-2 flex items-center justify-between shrink-0">
           <p className="text-muted-foreground text-xs">
             © 2024 Ballot Box
           </p>
