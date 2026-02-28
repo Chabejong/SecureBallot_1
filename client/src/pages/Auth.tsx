@@ -63,22 +63,21 @@ export default function Auth() {
       }
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+
       toast({
-        title: "Registration successful!",
-        description: "Your account has been created. You can now log in.",
+        title: "Welcome to Ballot Box!",
+        description: "Your account has been created and you are now signed in.",
       });
-      setMode("login");
-      loginForm.setValue("email", registerForm.getValues("email"));
-      registerForm.reset();
-      
+
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectParam = urlParams.get('redirect');
-      if (redirectParam) {
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('redirect', redirectParam);
-        window.history.replaceState({}, '', newUrl.toString());
-      }
+      const redirectTo = urlParams.get('redirect') || "/";
+
+      setTimeout(() => {
+        setLocation(redirectTo);
+      }, 100);
     },
     onError: (error: any) => {
       toast({

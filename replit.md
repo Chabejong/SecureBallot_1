@@ -8,6 +8,28 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## February 28, 2026 - Pre-publish Validation & Fixes
+
+### Registration Auto-Login Bug Fixed (Critical)
+- **Problem**: After registration, users were shown "Your account has been created. You can now log in" and taken back to the login form — they were never automatically signed in
+- **Root Cause**: `POST /api/auth/register` created the user but never called `req.logIn()` to establish a session
+- **Fix**: 
+  - Backend now calls `req.logIn(user, ...)` immediately after `registerUser()` succeeds
+  - Frontend `onSuccess` handler now invalidates the auth cache, shows "Welcome to Ballot Box!" toast, and redirects to `/` — matching the login flow
+
+### Credit Card Payments Enabled on Pricing Page
+- Removed `"card"` and `"credit"` from `disableFunding` in `PricingPayPalButton.tsx`
+- Changed `paymentFlow` from `"checkout"` with `loginType: "PAYPAL"` to `"auto"`
+- Updated button labels, page descriptions, and added VISA/Mastercard/AMEX/Discover badges
+
+### How It Works — Payment Information Updated
+- Added credit card payment info to the Invited Only pricing note
+- Added coloured payment method badges (PayPal, VISA, Mastercard, AMEX, Discover) inside the Payment Process box in Section 3
+
+### Admin Bypass for Invited Poll Invitations
+- `POST /api/invited-polls/:id/send-invitations` now enforces payment server-side (returns 402 if not paid), with admin bypass
+- `/api/invited-polls/:id/payment-info` returns "confirmed" for admins without payment
+
 ## October 12, 2025 - Fixed Authentication Number Validation Issues
 
 ### Issue 1: Authentication Number Input Not Working on Shared Links

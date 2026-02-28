@@ -49,11 +49,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
-  app.post('/api/auth/register', async (req, res) => {
+  app.post('/api/auth/register', async (req: any, res) => {
     try {
       const validatedData = registerUserSchema.parse(req.body);
       const user = await registerUser(validatedData);
-      res.status(201).json({ message: "Registration successful", user });
+      req.logIn(user, (err: any) => {
+        if (err) {
+          console.error("Session error after registration:", err);
+          return res.status(500).json({ message: "Registration succeeded but login failed" });
+        }
+        return res.status(201).json({ message: "Registration successful", user });
+      });
     } catch (error: any) {
       console.error("Registration error:", error);
       if (error.name === 'ZodError') {
