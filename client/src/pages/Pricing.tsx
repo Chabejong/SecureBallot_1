@@ -168,7 +168,7 @@ export default function Pricing() {
             Choose Your Plan
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" data-testid="text-pricing-description">
-            Select the perfect plan for your voting needs. All payments are processed securely via PayPal.
+            Select the perfect plan for your voting needs. Pay securely with PayPal or any major credit/debit card.
           </p>
         </div>
 
@@ -284,9 +284,18 @@ export default function Pricing() {
             Secure Payment Processing
           </h2>
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto" data-testid="text-payment-description">
-            All payments are processed securely through PayPal. Your subscription gives you access to unlimited polls 
+            All payments are processed securely through PayPal. You can pay with your PayPal account or any major 
+            credit or debit card — no PayPal account required. Your subscription gives you access to unlimited polls 
             for the specified participant count for one month. Cancel anytime.
           </p>
+
+          <div className="mt-6 flex flex-wrap justify-center items-center gap-3">
+            <div className="px-4 py-2 bg-[#003087] text-white text-sm font-bold rounded-md tracking-wide">PayPal</div>
+            <div className="px-4 py-2 bg-[#1a1f71] text-white text-sm font-bold rounded-md tracking-wide">VISA</div>
+            <div className="px-4 py-2 bg-[#eb001b] text-white text-sm font-bold rounded-md tracking-wide">Mastercard</div>
+            <div className="px-4 py-2 bg-[#2557d6] text-white text-sm font-bold rounded-md tracking-wide">AMEX</div>
+            <div className="px-4 py-2 bg-[#FF5F00] text-white text-sm font-bold rounded-md tracking-wide">Discover</div>
+          </div>
           
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg max-w-md mx-auto">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2" data-testid="text-paypal-label">
@@ -297,15 +306,21 @@ export default function Pricing() {
             </p>
           </div>
           
-          <div className="mt-8 flex justify-center items-center space-x-4">
+          <div className="mt-8 flex flex-wrap justify-center items-center gap-4">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
                 <Check className="h-5 w-5 text-white" />
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-300">Secure PayPal Processing</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">PayPal &amp; Credit Card Accepted</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
+                <Check className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-300">No PayPal Account Needed</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
                 <Check className="h-5 w-5 text-white" />
               </div>
               <span className="text-sm text-gray-600 dark:text-gray-300">Cancel Anytime</span>

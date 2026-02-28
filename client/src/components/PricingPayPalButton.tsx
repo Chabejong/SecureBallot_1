@@ -78,17 +78,13 @@ class PayPalSDKManager {
         .then((res) => res.json())
         .then((data) => data.clientToken);
       
-      // Configure SDK to prioritize PayPal account login and minimize guest options
+      // Configure SDK to support both PayPal and credit/debit card payments
       this.sdkInstance = await (window as any).paypal.createInstance({
         clientToken,
         components: ["paypal-payments"],
-        // Enforce minimal guest checkout options and prioritize PayPal account
         config: {
-          preferredLoginType: "PAYPAL", // Encourage PayPal login
-          landingPage: "LOGIN", // Direct to login page instead of signup
-          userAction: "PAY_NOW", // Streamline payment flow
-          // Restrict funding sources to PayPal only
-          disableFunding: ["card", "credit", "paylater", "venmo", "bancontact", "blik", "eps", "giropay", "ideal", "mercadopago", "mybank", "p24", "sepa", "sofort", "trustly"]
+          userAction: "PAY_NOW",
+          disableFunding: ["paylater", "venmo", "bancontact", "blik", "eps", "giropay", "mercadopago", "mybank", "p24", "sepa", "sofort", "trustly"]
         }
       });
       
@@ -231,10 +227,7 @@ export default function PricingPayPalButton({
 
       const checkoutOptionsPromise = createOrder();
       await paypalCheckout.start(
-        { 
-          paymentFlow: "checkout", // Use explicit checkout flow (not auto)
-          loginType: "PAYPAL" // Encourage PayPal login specifically
-        },
+        { paymentFlow: "auto" },
         checkoutOptionsPromise,
       );
     } catch (e) {
@@ -274,10 +267,10 @@ export default function PricingPayPalButton({
       data-testid={`button-purchase-${tier.toLowerCase()}`}
     >
       {!isPayPalReady 
-        ? "Loading PayPal..." 
+        ? "Loading..." 
         : isProcessing 
           ? "Processing..." 
-          : `Upgrade to ${tier.charAt(0).toUpperCase() + tier.slice(1)} - €${amount}`
+          : `Upgrade to ${tier.charAt(0).toUpperCase() + tier.slice(1)} — €${amount} (PayPal or Card)`
       }
     </Button>
   );
