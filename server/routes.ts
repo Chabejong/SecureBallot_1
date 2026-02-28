@@ -1602,6 +1602,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Not authorized" });
       }
 
+      // Enforce payment unless user is admin
+      if (!req.user.isAdmin) {
+        const existingPayment = await storage.getInvitedPollPayment(req.params.id);
+        if (!existingPayment || existingPayment.status !== "completed") {
+          return res.status(402).json({ message: "Payment required before sending invitations" });
+        }
+      }
+
       const voters = await storage.getInvitedVoters(req.params.id);
       const pendingVoters = voters.filter(v => v.invitationStatus === "pending" && (v.email || v.phone));
 
@@ -1702,10 +1710,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const price = getInvitedPollPrice(voterCount);
       const existingPayment = await storage.getInvitedPollPayment(req.params.id);
 
+      // Admin users bypass payment requirement
+      const isAdmin = req.user.isAdmin === true;
+
       res.json({
         voterCount,
         price,
-        isPaid: existingPayment?.status === "completed",
+        isPaid: isAdmin || existingPayment?.status === "completed",
+        isAdminBypass: isAdmin,
         paymentId: existingPayment?.id,
       });
     } catch (error) {
