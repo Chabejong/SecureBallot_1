@@ -12,9 +12,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { 
   Users, Upload, Plus, Trash2, Send, Clock, CheckCircle, 
   XCircle, Download, BarChart3, Mail, Phone, AlertCircle,
-  FileText, Eye, EyeOff
+  FileText, Eye, EyeOff, CreditCard, LockKeyhole
 } from "lucide-react";
 import { INVITED_POLL_PRICING } from "@shared/schema";
+import InvitedPollPayPalButton from "@/components/InvitedPollPayPalButton";
 
 export default function InvitedPollManage() {
   const [, params] = useRoute("/invited-poll/:id/manage");
@@ -55,6 +56,17 @@ export default function InvitedPollManage() {
     },
     enabled: !!pollId,
   });
+
+  const { data: paymentInfo, refetch: refetchPaymentInfo } = useQuery({
+    queryKey: ["/api/invited-polls", pollId, "payment-info"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/invited-polls/${pollId}/payment-info`);
+      return res.json();
+    },
+    enabled: !!pollId,
+  });
+
+  const isPaid = paymentInfo?.isPaid === true;
 
   const addVotersMutation = useMutation({
     mutationFn: async (voterList: Array<{email?: string; phone?: string}>) => {
@@ -385,18 +397,31 @@ export default function InvitedPollManage() {
             )}
 
             {!pollEnded && pendingInvitations > 0 && (
-              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
-                <CardContent className="p-4 flex items-center justify-between">
+              <Card className={isPaid
+                ? "border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900"
+                : "border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900"
+              }>
+                <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <Send className="w-5 h-5 text-blue-600" />
+                    {isPaid ? (
+                      <Send className="w-5 h-5 text-blue-600 shrink-0" />
+                    ) : (
+                      <LockKeyhole className="w-5 h-5 text-orange-500 shrink-0" />
+                    )}
                     <div>
                       <p className="font-medium">{pendingInvitations} pending invitation{pendingInvitations > 1 ? 's' : ''}</p>
-                      <p className="text-sm text-muted-foreground">Send invitations via email and SMS with unique voting links</p>
+                      <p className="text-sm text-muted-foreground">
+                        {isPaid
+                          ? "Send invitations via email and SMS with unique voting links"
+                          : "Payment required before sending invitations — go to the Pricing tab"
+                        }
+                      </p>
                     </div>
                   </div>
                   <Button
                     onClick={() => sendInvitationsMutation.mutate()}
-                    disabled={sendInvitationsMutation.isPending}
+                    disabled={sendInvitationsMutation.isPending || !isPaid}
+                    title={!isPaid ? "Complete payment in the Pricing tab first" : undefined}
                   >
                     <Send className="w-4 h-4 mr-2" />
                     {sendInvitationsMutation.isPending ? "Sending..." : "Send Invitations"}
@@ -516,11 +541,73 @@ export default function InvitedPollManage() {
             )}
           </TabsContent>
 
-          <TabsContent value="pricing">
+          <TabsContent value="pricing" className="space-y-6">
+            {/* Payment status / checkout card */}
+            {!pollEnded && currentVoterCount > 0 && (
+              <Card className={isPaid
+                ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900"
+                : "border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900"
+              }>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {isPaid ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="text-green-700 dark:text-green-400">Payment Confirmed</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5 text-orange-500" />
+                        <span className="text-orange-700 dark:text-orange-400">Payment Required</span>
+                      </>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    {isPaid
+                      ? "Your payment has been received. You can now send invitations to all voters."
+                      : "Pay once based on your voter count. Accepts credit/debit cards and PayPal."
+                    }
+                  </CardDescription>
+                </CardHeader>
+                {!isPaid && (
+                  <CardContent>
+                    <div className="flex items-center justify-between mb-4 p-3 bg-background rounded-lg border">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Voters</p>
+                        <p className="font-semibold">{currentVoterCount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Amount due</p>
+                        <p className="text-2xl font-bold text-orange-600">€{price}</p>
+                      </div>
+                    </div>
+                    <InvitedPollPayPalButton
+                      pollId={pollId}
+                      amount={price}
+                      voterCount={currentVoterCount}
+                      onSuccess={() => refetchPaymentInfo()}
+                    />
+                    <p className="text-xs text-muted-foreground text-center mt-3">
+                      Secure payment via PayPal — no PayPal account required to pay by card
+                    </p>
+                  </CardContent>
+                )}
+                {isPaid && (
+                  <CardContent>
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">€{paymentInfo?.price || price} paid for {paymentInfo?.voterCount || currentVoterCount} voters</span>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            )}
+
+            {/* Pricing tiers reference */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Pricing Tiers</CardTitle>
-                <CardDescription>Cost is based on the number of invited voters</CardDescription>
+                <CardDescription>One-time payment per poll, based on voter count</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -535,20 +622,14 @@ export default function InvitedPollManage() {
                     >
                       <div className="text-2xl font-bold text-primary">€{tier.price}</div>
                       <div className="text-sm text-muted-foreground mt-1">
-                        {tier.min} - {tier.max} voters
+                        {tier.min} – {tier.max} voters
                       </div>
                       {currentVoterCount >= tier.min && currentVoterCount <= tier.max && (
-                        <Badge className="mt-2">Current Tier</Badge>
+                        <Badge className="mt-2">Your Tier</Badge>
                       )}
                     </div>
                   ))}
                 </div>
-                {currentVoterCount > 0 && (
-                  <div className="mt-6 p-4 bg-muted/50 rounded-lg text-center">
-                    <p className="text-sm text-muted-foreground">Current voters: <strong>{currentVoterCount}</strong></p>
-                    <p className="text-lg font-bold mt-1">Total Cost: €{price}</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>

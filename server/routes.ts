@@ -1065,6 +1065,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await capturePaypalOrder(req, res);
   });
 
+  // PayPal IPN (Instant Payment Notification) endpoint
+  // PayPal calls this URL to notify the server of completed payments
+  app.post("/api/paypal/ipn", async (req, res) => {
+    try {
+      // Acknowledge receipt immediately as required by PayPal
+      res.sendStatus(200);
+
+      const ipnData = req.body;
+      const paymentStatus = ipnData.payment_status;
+      const txnId = ipnData.txn_id;
+      const mcGross = ipnData.mc_gross;
+      const custom = ipnData.custom; // We'll pass pollId here for invited poll payments
+
+      // Verify the IPN with PayPal by posting back the exact body
+      const verifyUrl = process.env.NODE_ENV === "production"
+        ? "https://www.paypal.com/cgi-bin/webscr"
+        : "https://www.sandbox.paypal.com/cgi-bin/webscr";
+
+      const verifyBody = `cmd=_notify-validate&${new URLSearchParams(ipnData).toString()}`;
+
+      const verifyResponse = await fetch(verifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: verifyBody,
+      });
+
+      const verifyText = await verifyResponse.text();
+
+      if (verifyText !== "VERIFIED") {
+        console.warn("[IPN] Received INVALID IPN notification — ignoring");
+        return;
+      }
+
+      console.log(`[IPN] VERIFIED — status=${paymentStatus}, txn=${txnId}, amount=${mcGross}`);
+
+      // Handle completed payments for invited polls
+      if (paymentStatus === "Completed" && custom) {
+        try {
+          const { pollId, userId } = JSON.parse(custom);
+          if (pollId && userId) {
+            const existingPayment = await storage.getInvitedPollPayment(pollId);
+            if (!existingPayment || existingPayment.status !== "completed") {
+              const voterCount = await storage.getInvitedVoterCount(pollId);
+              const price = getInvitedPollPrice(voterCount);
+              if (price !== null) {
+                const payment = await storage.createInvitedPollPayment(pollId, userId, voterCount, price.toString());
+                await storage.updateInvitedPollPaymentStatus(payment.id, "completed", txnId);
+                console.log(`[IPN] Invited poll payment recorded for poll ${pollId}`);
+              }
+            }
+          }
+        } catch (parseError) {
+          console.warn("[IPN] Could not parse custom field:", custom);
+        }
+      }
+    } catch (error) {
+      console.error("[IPN] Error processing IPN:", error);
+    }
+  });
+
   // Subscription limit check endpoint
   app.get('/api/user/poll-limits', isAuthenticated, async (req: any, res) => {
     try {
