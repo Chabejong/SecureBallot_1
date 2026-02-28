@@ -253,7 +253,7 @@ export default function HowItWorks() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-3">Each plan is a one-time purchase per poll. See the Pricing page for full details.</p>
+                      <p className="text-xs text-muted-foreground mt-3">Each plan is a one-time purchase per poll. Pay securely with PayPal or any major credit/debit card — no PayPal account required. See the Pricing page for full details.</p>
                     </div>
                   </div>
                 </div>
@@ -359,16 +359,28 @@ export default function HowItWorks() {
               <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <CreditCard className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
+                  <div className="w-full">
                     <p className="font-medium text-primary mb-2">Payment Process:</p>
                     <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
                       <li>Visit the Pricing page to view all available plans</li>
                       <li>Choose the plan that matches your expected participant count</li>
-                      <li>Click "Upgrade" to proceed to secure PayPal checkout</li>
-                      <li>Complete payment through PayPal (no PayPal account required - you can pay with credit/debit card)</li>
+                      <li>Click "Upgrade" to open the secure checkout</li>
+                      <li>Pay with your <strong>PayPal account</strong> or a <strong>credit/debit card</strong> — no PayPal account needed</li>
                       <li>Your subscription is activated instantly after successful payment</li>
                       <li>Start creating unlimited polls with your new participant limits</li>
                     </ol>
+
+                    <div className="mt-4">
+                      <p className="text-xs text-muted-foreground mb-2 font-medium">Accepted payment methods:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1 bg-[#003087] text-white text-xs font-bold rounded tracking-wide">PayPal</span>
+                        <span className="px-3 py-1 bg-[#1a1f71] text-white text-xs font-bold rounded tracking-wide">VISA</span>
+                        <span className="px-3 py-1 bg-[#eb001b] text-white text-xs font-bold rounded tracking-wide">Mastercard</span>
+                        <span className="px-3 py-1 bg-[#2557d6] text-white text-xs font-bold rounded tracking-wide">AMEX</span>
+                        <span className="px-3 py-1 bg-[#FF5F00] text-white text-xs font-bold rounded tracking-wide">Discover</span>
+                      </div>
+                    </div>
+
                     <p className="text-sm text-muted-foreground mt-3">
                       <strong>Payment Account:</strong> All payments are processed securely through PayPal to account nkwettae@yahoo.com. You'll receive a payment confirmation email after completing your purchase.
                     </p>
